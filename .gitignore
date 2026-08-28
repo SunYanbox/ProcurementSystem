@@ -26,6 +26,11 @@
 # Uncomment if necessary:
 # packages/
 
+# Database
+*.db
+*.db-shm
+*.db-wal
+
 # Environment
 .env
 appsettings.Development.json

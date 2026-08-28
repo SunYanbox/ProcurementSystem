@@ -1,8 +1,15 @@
+using Microsoft.EntityFrameworkCore;
+using ProcurementSystem.Data;
+using ProcurementSystem.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddDbContext<TodoDb>(opt =>
+    opt.UseSqlite(builder.Configuration.GetConnectionString("ProcurementDb")));
+builder.Services.AddScoped<ITodoService, TodoService>();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -14,28 +21,14 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
-var summaries = new[]
+// Create the SQLite database on startup (development convenience).
+// Note: for a real project, prefer EF Core migrations instead of EnsureCreated.
+using (var scope = app.Services.CreateScope())
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    var db = scope.ServiceProvider.GetRequiredService<TodoDb>();
+    db.Database.EnsureCreated();
+}
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
