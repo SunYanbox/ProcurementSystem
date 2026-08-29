@@ -1,0 +1,190 @@
+{
+  "info": {
+    "_postman_id": "56a885c3-2e81-4f44-8aae-7b705031cfed",
+    "name": "TodoAPI",
+    "description": "",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5074",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "todo_id",
+      "value": "10",
+      "type": "string",
+      "disabled": false
+    }
+  ],
+  "item": [
+    {
+      "name": "获取TODO列表",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/todos",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "todos"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "创建一条TODO",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/todos",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "todos"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"测试TODO1\",\n  \"isComplete\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const jsonData = pm.response.json();",
+              "pm.collectionVariables.set(\"todo_id\", jsonData.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "获取指定ID的TODO",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/todos/{{todo_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "todos",
+            "%7B%7Btodo_id%7D%7D"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "更新一条TODO",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/todos/{{todo_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "todos",
+            "%7B%7Btodo_id%7D%7D"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"已更新名称1\",\n  \"isComplete\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "获取更新后的TODO数据",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/todos/{{todo_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "todos",
+            "%7B%7Btodo_id%7D%7D"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "删除一条TODO",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/todos/{{todo_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "todos",
+            "%7B%7Btodo_id%7D%7D"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    }
+  ]
+}
