@@ -14,7 +14,7 @@ public interface ITodoService
     Task<bool> DeleteAsync(int id);
 }
 
-public class TodoService(TodoDb db) : ITodoService
+public class TodoService(ProcurementDbContext db) : ITodoService
 {
     public Task<List<Todo>> GetAllAsync() => db.Todos.ToListAsync();
 

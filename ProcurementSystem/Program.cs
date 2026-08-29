@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddOpenApi();
-builder.Services.AddDbContext<TodoDb>(opt =>
+builder.Services.AddDbContext<ProcurementDbContext>(opt =>
     opt.UseSqlite(builder.Configuration.GetConnectionString("ProcurementDb")));
 builder.Services.AddScoped<ITodoService, TodoService>();
 builder.Services.AddControllers();
@@ -21,12 +21,11 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
-// Create the SQLite database on startup (development convenience).
-// Note: for a real project, prefer EF Core migrations instead of EnsureCreated.
+// Apply any pending EF Core migrations on startup (development convenience).
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<TodoDb>();
-    db.Database.EnsureCreated();
+    var db = scope.ServiceProvider.GetRequiredService<ProcurementDbContext>();
+    db.Database.Migrate();
 }
 
 app.MapControllers();
