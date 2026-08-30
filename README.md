@@ -20,7 +20,8 @@ ProcurementSystem/
 │   ├── DTOs/                       # 数据传输对象：API 输入/输出契约
 │   ├── Services/                   # 业务逻辑层：审批流、权限、库存联动等
 │   ├── Program.cs                  # 应用入口：DI 注册、请求管道配置
-│   ├── appsettings.json            # 配置文件（连接字符串等）
+│   ├── appsettings.json            # 配置文件（连接字符串、JWT 生命周期等）
+│   ├── appsettings.Development.json # 开发环境配置（被 gitignore，需自行创建）
 │   └── ProcurementSystem.csproj
 ├── docs/
 │   └── django-baseline.md          # Django 原版需求基线（迁移对照标准）
@@ -63,6 +64,37 @@ ProcurementSystem/
 - [ ] 实现采购状态机
 - [ ] 实现库存联动
 - [ ] 添加单元测试与集成测试
+
+## 开发环境配置（appsettings.Development.json）
+
+`appsettings.Development.json` **不会提交到 Git**（`.gitignore` 已排除），因为它包含开发用的 JWT 签名密钥。新克隆仓库后需手动创建此文件，应用才能签发和验证 JWT。
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Jwt": {
+    "Key": "dev-only-super-secret-key-change-me-in-production-0123456789",
+    "Issuer": "ProcurementSystem",
+    "Audience": "ProcurementSystem",
+    "AccessTokenMinutes": 2,
+    "RefreshTokenDays": 7
+  }
+}
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `Jwt:Key` | HMAC-SHA256 签名密钥，至少 32 字节；仅开发环境可见，生产密钥经环境变量注入 |
+| `Jwt:Issuer` / `Jwt:Audience` | token 签发方与受众标识，与 `appsettings.json` 一致 |
+| `Jwt:AccessTokenMinutes` | 访问令牌有效期（分钟）；开发 2 分钟便于观察过期行为，生产 15 分钟 |
+| `Jwt:RefreshTokenDays` | 刷新令牌有效期（天）；过期后需重新登录 |
+
+> 生产环境的 `Jwt:Key` 不要写入任何被 Git 跟踪的文件，应通过环境变量或密钥管理服务注入。
 
 ## 数据库说明
 
