@@ -4,10 +4,12 @@ public class User
 {
     public long Id { get; set; }
 
-    public string Username { get; set; } = string.Empty;
+    // Null means the employee record exists but no login account is bound yet.
+    public string? Username { get; set; }
 
     // Internal field only. Never expose in any DTO.
-    public string PasswordHash { get; set; } = string.Empty;
+    // Null until the employee completes self-registration.
+    public string? PasswordHash { get; set; }
 
     // Work IDs may contain leading zeros or letters.
     public string WorkId { get; set; } = string.Empty;
