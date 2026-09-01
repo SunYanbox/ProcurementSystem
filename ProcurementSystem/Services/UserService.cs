@@ -10,9 +10,12 @@ public enum UserError
     WorkIdTaken,
     EmailTaken,
     PhoneTaken,
+    PhoneInvalid,
     DepartmentNotFound,
     RoleInvalid,
-    UserNotFound
+    UserNotFound,
+    WrongPassword,
+    PasswordTooWeak
 }
 
 // Mirrors AuthResult but stays in the user domain so admin operations
@@ -30,6 +33,9 @@ public interface IUserService
     Task<IReadOnlyList<UserDto>> ListAsync(long? departmentId, string? role, bool? working, string? search);
     Task<UserResult<UserDto>> GetByIdAsync(long id);
     Task<UserResult<UserDto>> UpdateAsync(long id, UpdateUserRequest dto);
+    Task<UserResult<bool>> ChangePasswordAsync(long userId, ChangePasswordRequest dto);
+    Task<UserResult<UserDto>> BindPhoneAsync(long userId, BindPhoneRequest dto);
+    Task<UserResult<UserDto>> UnbindPhoneAsync(long userId);
 }
 
 public class UserService(ProcurementDbContext db) : IUserService
@@ -174,6 +180,70 @@ public class UserService(ProcurementDbContext db) : IUserService
         if (dto.Working.HasValue)
             user.Working = dto.Working.Value;
 
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return UserResult<UserDto>.Ok(UserMapper.ToDto(user));
+    }
+
+    public async Task<UserResult<bool>> ChangePasswordAsync(long userId, ChangePasswordRequest dto)
+    {
+        var user = await db.Users.FindAsync(userId);
+        if (user is null)
+            return UserResult<bool>.Fail(UserError.UserNotFound);
+
+        // A user without a hash has not self-registered yet, so there is no
+        // "old password" to verify — treat it as a wrong password.
+        if (user.PasswordHash is null ||
+            !BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.PasswordHash))
+        {
+            return UserResult<bool>.Fail(UserError.WrongPassword);
+        }
+
+        if (dto.NewPassword.Length < 6)
+            return UserResult<bool>.Fail(UserError.PasswordTooWeak);
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return UserResult<bool>.Ok(true);
+    }
+
+    public async Task<UserResult<UserDto>> BindPhoneAsync(long userId, BindPhoneRequest dto)
+    {
+        var user = await db.Users
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user is null)
+            return UserResult<UserDto>.Fail(UserError.UserNotFound);
+
+        var phone = NormalizeEmpty(dto.Phone);
+        if (phone is null)
+            return UserResult<UserDto>.Fail(UserError.PhoneInvalid);
+
+        // Exclude self so re-submitting the same phone is a no-op rather than a conflict.
+        if (await db.Users.AnyAsync(u => u.Id != userId && u.Phone == phone))
+            return UserResult<UserDto>.Fail(UserError.PhoneTaken);
+
+        user.Phone = phone;
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return UserResult<UserDto>.Ok(UserMapper.ToDto(user));
+    }
+
+    public async Task<UserResult<UserDto>> UnbindPhoneAsync(long userId)
+    {
+        var user = await db.Users
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user is null)
+            return UserResult<UserDto>.Fail(UserError.UserNotFound);
+
+        user.Phone = null;
         user.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 

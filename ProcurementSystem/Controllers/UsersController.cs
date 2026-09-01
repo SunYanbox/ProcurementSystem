@@ -15,14 +15,74 @@ public class UsersController(IUserService userService) : ControllerBase
     [Authorize]
     public async Task<ActionResult<UserDto>> GetMe()
     {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var user = await userService.GetMeAsync(userId.Value);
+        return user is null ? NotFound() : Ok(user);
+    }
+
+    [HttpPut("me/password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest dto)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await userService.ChangePasswordAsync(userId.Value, dto);
+        return result.Error switch
+        {
+            UserError.WrongPassword or UserError.PasswordTooWeak => BadRequest(),
+            UserError.UserNotFound => NotFound(),
+            null => NoContent(),
+            _ => throw new InvalidOperationException($"Unhandled error: {result.Error}")
+        };
+    }
+
+    [HttpPut("me/phone")]
+    [Authorize]
+    public async Task<ActionResult<UserDto>> BindPhone(BindPhoneRequest dto)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await userService.BindPhoneAsync(userId.Value, dto);
+        return result.Error switch
+        {
+            UserError.PhoneInvalid => BadRequest(),
+            UserError.PhoneTaken => Conflict(),
+            UserError.UserNotFound => NotFound(),
+            null => Ok(result.Value),
+            _ => throw new InvalidOperationException($"Unhandled error: {result.Error}")
+        };
+    }
+
+    [HttpDelete("me/phone")]
+    [Authorize]
+    public async Task<ActionResult<UserDto>> UnbindPhone()
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await userService.UnbindPhoneAsync(userId.Value);
+        return result.Error switch
+        {
+            UserError.UserNotFound => NotFound(),
+            null => Ok(result.Value),
+            _ => throw new InvalidOperationException($"Unhandled error: {result.Error}")
+        };
+    }
+
+    private long? GetCurrentUserId()
+    {
         // JwtBearer maps the JWT "sub" claim to ClaimTypes.NameIdentifier by default,
         // so read it through the framework-standard claim type.
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (sub is null || !long.TryParse(sub, out var userId))
-            return Unauthorized();
-
-        var user = await userService.GetMeAsync(userId);
-        return user is null ? NotFound() : Ok(user);
+        return sub is not null && long.TryParse(sub, out var userId) ? userId : null;
     }
 
     [HttpPost]

@@ -34,6 +34,18 @@ public class UpdateUserRequest
     public bool? Working { get; set; }
 }
 
+public class ChangePasswordRequest
+{
+    public string OldPassword { get; set; } = string.Empty;
+
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class BindPhoneRequest
+{
+    public string Phone { get; set; } = string.Empty;
+}
+
 public class UserDto
 {
     public long Id { get; set; }
