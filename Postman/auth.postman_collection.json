@@ -77,6 +77,12 @@
       "value": "password456",
       "type": "string",
       "disabled": false
+    },
+    {
+      "key": "avatar_file_path",
+      "value": "Postman/test-avatar.png",
+      "type": "string",
+      "disabled": false
     }
   ],
   "item": [
@@ -746,6 +752,45 @@
         },
         "body": {
           "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "上传头像",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/me/avatar",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me",
+            "avatar"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "{{avatar_file_path}}"
+            }
+          ]
         }
       },
       "response": []
