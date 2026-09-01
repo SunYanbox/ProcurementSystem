@@ -16,9 +16,9 @@ using ProcurementSystem.Models;
 //                                  (B001 by default), or the given workId.
 //   help                           Print this help text.
 //
-// With no command, defaults to `reset` so a plain `dotnet run --project DevTools`
-// restores every seeded account to its unbound state.
-var command = args.Length > 0 ? args[0] : "reset";
+// With no command, runs del-user then reset so a plain `dotnet run --project DevTools`
+// removes Postman test leftovers and restores every seeded account to its unbound state.
+var command = args.Length > 0 ? args[0] : null;
 var dbPathArg = command is "seed-employee" or "seed-admin"
     ? (args.Length > 1 ? args[1] : null)
     : args.Length > 2 ? args[2] : null;
@@ -36,6 +36,13 @@ using var db = new ProcurementDbContext(options);
 // Migrate keeps the tool self-sufficient: the schema is created or upgraded
 // without requiring the web app to have run first.
 db.Database.Migrate();
+
+if (command is null)
+{
+    var deleted = await DeleteUserAsync(db, null);
+    var reset = await ResetAsync(db, null);
+    return deleted == 0 || reset == 0 ? 0 : 1;
+}
 
 return command switch
 {
@@ -183,13 +190,15 @@ static int PrintHelp()
     Console.WriteLine(
         """
         DevTools commands:
+          (no command)                    Delete test users (B001), then reset seeded
+                                          accounts (A001, ADMIN001).
           reset [workId] [dbPath]         Reset login binding for seeded accounts
                                           (A001, ADMIN001), or for the given workId only.
           seed-employee [dbPath]          Create the A001 employee record.
           seed-admin [dbPath]             Create the ADMIN001 admin record.
           promote <workId> [dbPath]       Set the employee's role to Admin.
           demote <workId> [dbPath]        Set the employee's role back to Employee.
-          del-user [workId] [dbPath]   Delete test users (B001 by default),
+          del-user [workId] [dbPath]      Delete test users (B001 by default),
                                           or the given workId.
           help                            Show this help.
         """);
