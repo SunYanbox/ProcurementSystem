@@ -71,6 +71,12 @@
       "value": "",
       "type": "string",
       "disabled": false
+    },
+    {
+      "key": "new_password",
+      "value": "password456",
+      "type": "string",
+      "disabled": false
     }
   ],
   "item": [
@@ -622,6 +628,124 @@
               "language": "json"
             }
           }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "修改自己的密码",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/me/password",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me",
+            "password"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"oldPassword\": \"{{password}}\",\n  \"newPassword\": \"{{new_password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "绑定/修改手机号",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/me/phone",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me",
+            "phone"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"13900000004\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "解绑手机号",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/me/phone",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me",
+            "phone"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
         }
       },
       "response": []
