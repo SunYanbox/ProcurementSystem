@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ProcurementSystem.Data;
-using ProcurementSystem.Models;
 using ProcurementSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,21 +55,9 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ProcurementDbContext>();
     db.Database.Migrate();
 
-    // Seed a department and an unbound employee record so the register → login
-    // flow can be exercised before the admin user-management endpoints exist.
-    if (app.Environment.IsDevelopment() && !db.Departments.Any())
-    {
-        var dept = new Department { Name = "研发部" };
-        db.Users.Add(new User
-        {
-            WorkId = "A001",
-            Name = "测试员工",
-            Department = dept
-            // Username and PasswordHash stay null: the employee has not bound
-            // a login account yet, which is exactly what register is for.
-        });
-        db.SaveChanges();
-    }
+    // Seed data is created by the DevTools console project instead:
+    // `dotnet run --project DevTools seed-employee` and
+    // `dotnet run --project DevTools seed-admin`.
 }
 
 app.MapControllers();
