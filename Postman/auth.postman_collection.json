@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "3f9e2c6d-8b41-4f5a-9d6e-1c8a2e5b7f4d",
     "name": "Auth API",
-    "description": "JWT authentication endpoints. Run in order: register first (binds the seeded employee record), then login stores tokens as collection variables, then me/refresh/verify use them.",
+    "description": "JWT authentication and user-management endpoints. Run order: register first (binds the seeded employee record), then login stores tokens as collection variables, then me/refresh/verify use them. For the admin section, run the DevTools seed-admin command first, then register and login with the ADMIN001 account.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -38,6 +38,36 @@
     },
     {
       "key": "refresh_token",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_work_id",
+      "value": "ADMIN001",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_username",
+      "value": "adminuser",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_password",
+      "value": "adminpass123",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_access_token",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "created_user_id",
       "value": "",
       "type": "string",
       "disabled": false
@@ -240,6 +270,353 @@
         "body": {
           "mode": "raw",
           "raw": "{\n  \"token\": \"{{access_token}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "管理员注册（需先运行 DevTools seed-admin）",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"workId\": \"{{admin_work_id}}\",\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\",\n  \"passwordAgain\": \"{{admin_password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "管理员登录",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const jsonData = pm.response.json();",
+              "pm.collectionVariables.set(\"admin_access_token\", jsonData.accessToken);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "创建员工档案",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"workId\": \"B001\",\n  \"name\": \"测试员工B\",\n  \"email\": \"b001@example.com\",\n  \"phone\": \"13800000002\",\n  \"departmentId\": 1,\n  \"role\": \"Employee\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const jsonData = pm.response.json();",
+              "pm.collectionVariables.set(\"created_user_id\", jsonData.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "获取员工列表（无过滤）",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "获取员工列表（按部门筛选）",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users?departmentId=1",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users"
+          ],
+          "port": "",
+          "query": [
+            {
+              "key": "departmentId",
+              "value": "1"
+            }
+          ]
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "获取员工列表（按角色筛选）",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users?role=Admin",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users"
+          ],
+          "port": "",
+          "query": [
+            {
+              "key": "role",
+              "value": "Admin"
+            }
+          ]
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "获取员工列表（搜索姓名）",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users?search=测试",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users"
+          ],
+          "port": "",
+          "query": [
+            {
+              "key": "search",
+              "value": "测试"
+            }
+          ]
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "获取指定用户",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/{{created_user_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "{{created_user_id}}"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "更新用户（改姓名+手机号）",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/{{created_user_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "{{created_user_id}}"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"测试员工B-改\",\n  \"phone\": \"13900000003\"\n}",
           "options": {
             "raw": {
               "language": "json"
