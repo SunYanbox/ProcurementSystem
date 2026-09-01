@@ -1,5 +1,39 @@
 namespace ProcurementSystem.DTOs;
 
+public class CreateUserRequest
+{
+    public string WorkId { get; set; } = string.Empty;
+
+    public string Name { get; set; } = string.Empty;
+
+    public string? Email { get; set; }
+
+    public string? Phone { get; set; }
+
+    public long DepartmentId { get; set; }
+
+    // Keep role as string here: the HTTP contract must not leak the C# enum type,
+    // and invalid values are rejected by UserService rather than by model binding.
+    public string? Role { get; set; }
+}
+
+public class UpdateUserRequest
+{
+    // Every field is optional because PUT /api/users/{id} performs a partial update;
+    // null means "keep the existing value".
+    public string? Name { get; set; }
+
+    public string? Email { get; set; }
+
+    public string? Phone { get; set; }
+
+    public long? DepartmentId { get; set; }
+
+    public string? Role { get; set; }
+
+    public bool? Working { get; set; }
+}
+
 public class UserDto
 {
     public long Id { get; set; }
