@@ -1,0 +1,721 @@
+{
+  "info": {
+    "_postman_id": "7b1e4a2d-9c3f-4d5e-8f6a-2b7c1e9d4a3f",
+    "name": "Warehouse API",
+    "description": "Inventory endpoints for office supply catalog, stock snapshots, and stock transactions. Run prerequisites: dotnet run --project DevTools seed-warehouse and dotnet run --project DevTools seed-warehouse-admin, then run this collection. The employee and admin requests register their accounts first, then log in; tokens are stored as collection variables. Repeat runs reuse the existing item type when the seeded type already exists, and create new items (Item.Name has no unique index).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5074",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "work_id",
+      "value": "W001",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "username",
+      "value": "warehouseuser",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "password",
+      "value": "whpass123",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_work_id",
+      "value": "WADMIN001",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_username",
+      "value": "warehouseadmin",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_password",
+      "value": "whadminpass123",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_access_token",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "created_item_type_id",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "created_item_id",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    }
+  ],
+  "item": [
+    {
+      "name": "员工注册",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"workId\": \"{{work_id}}\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"passwordAgain\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "员工登录",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const jsonData = pm.response.json();",
+              "pm.collectionVariables.set(\"access_token\", jsonData.accessToken);",
+              "pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理员注册",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"workId\": \"{{admin_work_id}}\",\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\",\n  \"passwordAgain\": \"{{admin_password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "管理员登录",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const jsonData = pm.response.json();",
+              "pm.collectionVariables.set(\"admin_access_token\", jsonData.accessToken);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "刷新令牌",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/refresh",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "refresh"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const jsonData = pm.response.json();",
+              "pm.collectionVariables.set(\"access_token\", jsonData.accessToken);",
+              "pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "获取物品类型列表",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/item-types",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "item-types"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get(\"created_item_type_id\")) {",
+              "  const jsonData = pm.response.json();",
+              "  if (jsonData.length > 0) {",
+              "    pm.collectionVariables.set(\"created_item_type_id\", jsonData[0].id);",
+              "  }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "创建物品类型",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/item-types",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "item-types"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"办公耗材\",\n  \"description\": \"纸张、墨盒等日常消耗品\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const jsonData = pm.response.json();",
+              "  pm.collectionVariables.set(\"created_item_type_id\", jsonData.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "更新物品类型",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/item-types/{{created_item_type_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "item-types",
+            "{{created_item_type_id}}"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"办公耗材\",\n  \"description\": \"更新后的描述\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "获取物品目录",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/items",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "items"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "创建物品",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/items",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "items"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"A4复印纸\",\n  \"typeId\": {{created_item_type_id}},\n  \"description\": \"80g A4复印纸，500张/包\",\n  \"specification\": \"500张/包\",\n  \"unit\": \"包\",\n  \"price\": 25.5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const jsonData = pm.response.json();",
+              "  pm.collectionVariables.set(\"created_item_id\", jsonData.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "更新物品",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/items/{{created_item_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "items",
+            "{{created_item_id}}"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"A4复印纸（升级版）\",\n  \"price\": 27.5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "手动入库",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/stocks/{{created_item_id}}/transactions",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "stocks",
+            "{{created_item_id}}",
+            "transactions"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"ManualInbound\",\n  \"quantityChange\": 10,\n  \"note\": \"手动入库测试\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "查询库存列表",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/stocks",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "stocks"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "查询单个物品库存",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/stocks/{{created_item_id}}",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "stocks",
+            "{{created_item_id}}"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "查询库存流水",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/transactions",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "transactions"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
+    }
+  ]
+}
