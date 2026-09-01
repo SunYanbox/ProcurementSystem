@@ -405,4 +405,249 @@ public class UserServiceTests : TestBase
 
         Assert.Equal(UserError.DepartmentNotFound, result.Error);
     }
+
+    [Fact]
+    public async Task ChangePasswordAsync_UpdatesHash_WhenOldPasswordCorrect()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedBoundUserAsync(db, password: "oldpass1");
+        var service = CreateUserService(db);
+
+        var result = await service.ChangePasswordAsync(employee.Id, new ChangePasswordRequest
+        {
+            OldPassword = "oldpass1",
+            NewPassword = "newpass1"
+        });
+
+        Assert.Null(result.Error);
+        Assert.True(result.Value);
+
+        var updated = await db.Users.FindAsync(employee.Id);
+        Assert.NotNull(updated!.PasswordHash);
+        Assert.True(BCrypt.Net.BCrypt.Verify("newpass1", updated.PasswordHash));
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_Fails_WhenOldPasswordWrong()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedBoundUserAsync(db, password: "correct1");
+        var service = CreateUserService(db);
+
+        var result = await service.ChangePasswordAsync(employee.Id, new ChangePasswordRequest
+        {
+            OldPassword = "wrongpass",
+            NewPassword = "newpass1"
+        });
+
+        Assert.Equal(UserError.WrongPassword, result.Error);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_Fails_WhenPasswordHashNull()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        var service = CreateUserService(db);
+
+        var result = await service.ChangePasswordAsync(employee.Id, new ChangePasswordRequest
+        {
+            OldPassword = "anything",
+            NewPassword = "newpass1"
+        });
+
+        Assert.Equal(UserError.WrongPassword, result.Error);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_Fails_WhenNewPasswordTooShort()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedBoundUserAsync(db, password: "oldpass1");
+        var service = CreateUserService(db);
+
+        var result = await service.ChangePasswordAsync(employee.Id, new ChangePasswordRequest
+        {
+            OldPassword = "oldpass1",
+            NewPassword = "12345"
+        });
+
+        Assert.Equal(UserError.PasswordTooWeak, result.Error);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_Fails_WhenUserNotFound()
+    {
+        using var db = CreateDbContext();
+        var service = CreateUserService(db);
+
+        var result = await service.ChangePasswordAsync(999, new ChangePasswordRequest
+        {
+            OldPassword = "oldpass1",
+            NewPassword = "newpass1"
+        });
+
+        Assert.Equal(UserError.UserNotFound, result.Error);
+    }
+
+    [Fact]
+    public async Task BindPhoneAsync_UpdatesPhone_WhenInputValid()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        var service = CreateUserService(db);
+
+        var result = await service.BindPhoneAsync(employee.Id, new BindPhoneRequest
+        {
+            Phone = "13900001111"
+        });
+
+        Assert.Null(result.Error);
+        Assert.NotNull(result.Value);
+        Assert.Equal("13900001111", result.Value.Phone);
+    }
+
+    [Fact]
+    public async Task BindPhoneAsync_Fails_WhenPhoneBlank()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        var service = CreateUserService(db);
+
+        var result = await service.BindPhoneAsync(employee.Id, new BindPhoneRequest
+        {
+            Phone = "   "
+        });
+
+        Assert.Equal(UserError.PhoneInvalid, result.Error);
+    }
+
+    [Fact]
+    public async Task BindPhoneAsync_Fails_WhenPhoneTakenByOtherUser()
+    {
+        using var db = CreateDbContext();
+        var (_, employeeA) = await SeedUnboundEmployeeAsync(db, "A001");
+        employeeA.Phone = "13900001111";
+        await db.SaveChangesAsync();
+        var (_, employeeB) = await SeedUnboundEmployeeAsync(db, "B001");
+        var service = CreateUserService(db);
+
+        var result = await service.BindPhoneAsync(employeeB.Id, new BindPhoneRequest
+        {
+            Phone = "13900001111"
+        });
+
+        Assert.Equal(UserError.PhoneTaken, result.Error);
+    }
+
+    [Fact]
+    public async Task BindPhoneAsync_Fails_WhenUserNotFound()
+    {
+        using var db = CreateDbContext();
+        var service = CreateUserService(db);
+
+        var result = await service.BindPhoneAsync(999, new BindPhoneRequest
+        {
+            Phone = "13900001111"
+        });
+
+        Assert.Equal(UserError.UserNotFound, result.Error);
+    }
+
+    [Fact]
+    public async Task UnbindPhoneAsync_ClearsPhone_WhenBound()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        employee.Phone = "13900001111";
+        await db.SaveChangesAsync();
+        var service = CreateUserService(db);
+
+        var result = await service.UnbindPhoneAsync(employee.Id);
+
+        Assert.Null(result.Error);
+        Assert.NotNull(result.Value);
+        Assert.Null(result.Value.Phone);
+    }
+
+    [Fact]
+    public async Task UnbindPhoneAsync_Fails_WhenUserNotFound()
+    {
+        using var db = CreateDbContext();
+        var service = CreateUserService(db);
+
+        var result = await service.UnbindPhoneAsync(999);
+
+        Assert.Equal(UserError.UserNotFound, result.Error);
+    }
+
+    [Fact]
+    public async Task UploadAvatarAsync_StoresJpeg_WhenContentTypeIsJpeg()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        var service = CreateUserService(db);
+        await using var stream = new MemoryStream(new byte[1024]);
+
+        var result = await service.UploadAvatarAsync(employee.Id, stream, "image/jpeg");
+
+        Assert.Null(result.Error);
+        Assert.NotNull(result.Value);
+        Assert.StartsWith("/avatars/", result.Value.AvatarUrl);
+        Assert.EndsWith(".jpg", result.Value.AvatarUrl);
+    }
+
+    [Fact]
+    public async Task UploadAvatarAsync_StoresPng_WhenContentTypeIsPng()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        var service = CreateUserService(db);
+        await using var stream = new MemoryStream(new byte[1024]);
+
+        var result = await service.UploadAvatarAsync(employee.Id, stream, "image/png");
+
+        Assert.Null(result.Error);
+        Assert.NotNull(result.Value);
+        Assert.StartsWith("/avatars/", result.Value.AvatarUrl);
+        Assert.EndsWith(".png", result.Value.AvatarUrl);
+    }
+
+    [Fact]
+    public async Task UploadAvatarAsync_Fails_WhenContentTypeInvalid()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        var service = CreateUserService(db);
+        await using var stream = new MemoryStream(new byte[1024]);
+
+        var result = await service.UploadAvatarAsync(employee.Id, stream, "text/plain");
+
+        Assert.Equal(UserError.FileTypeInvalid, result.Error);
+    }
+
+    [Fact]
+    public async Task UploadAvatarAsync_Fails_WhenFileTooLarge()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        var service = CreateUserService(db);
+        await using var stream = new MemoryStream(new byte[2 * 1024 * 1024 + 1]);
+
+        var result = await service.UploadAvatarAsync(employee.Id, stream, "image/png");
+
+        Assert.Equal(UserError.FileTooLarge, result.Error);
+    }
+
+    [Fact]
+    public async Task UploadAvatarAsync_Fails_WhenUserNotFound()
+    {
+        using var db = CreateDbContext();
+        var service = CreateUserService(db);
+        await using var stream = new MemoryStream(new byte[1024]);
+
+        var result = await service.UploadAvatarAsync(999, stream, "image/png");
+
+        Assert.Equal(UserError.UserNotFound, result.Error);
+    }
 }
