@@ -77,6 +77,26 @@ public class UsersController(IUserService userService) : ControllerBase
         };
     }
 
+    [HttpPost("me/avatar")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<UserDto>> UploadAvatar(IFormFile file)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        await using var stream = file.OpenReadStream();
+        var result = await userService.UploadAvatarAsync(userId.Value, stream, file.ContentType);
+        return result.Error switch
+        {
+            UserError.FileTypeInvalid or UserError.FileTooLarge => BadRequest(),
+            UserError.UserNotFound => NotFound(),
+            null => Ok(result.Value),
+            _ => throw new InvalidOperationException($"Unhandled error: {result.Error}")
+        };
+    }
+
     private long? GetCurrentUserId()
     {
         // JwtBearer maps the JWT "sub" claim to ClaimTypes.NameIdentifier by default,

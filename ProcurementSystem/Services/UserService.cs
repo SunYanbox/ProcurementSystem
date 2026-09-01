@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using ProcurementSystem.Data;
 using ProcurementSystem.DTOs;
@@ -15,7 +16,9 @@ public enum UserError
     RoleInvalid,
     UserNotFound,
     WrongPassword,
-    PasswordTooWeak
+    PasswordTooWeak,
+    FileTypeInvalid,
+    FileTooLarge
 }
 
 // Mirrors AuthResult but stays in the user domain so admin operations
@@ -36,9 +39,10 @@ public interface IUserService
     Task<UserResult<bool>> ChangePasswordAsync(long userId, ChangePasswordRequest dto);
     Task<UserResult<UserDto>> BindPhoneAsync(long userId, BindPhoneRequest dto);
     Task<UserResult<UserDto>> UnbindPhoneAsync(long userId);
+    Task<UserResult<UserDto>> UploadAvatarAsync(long userId, Stream stream, string contentType);
 }
 
-public class UserService(ProcurementDbContext db) : IUserService
+public class UserService(ProcurementDbContext db, IWebHostEnvironment env) : IUserService
 {
     public async Task<UserDto?> GetMeAsync(long userId)
     {
@@ -244,6 +248,46 @@ public class UserService(ProcurementDbContext db) : IUserService
             return UserResult<UserDto>.Fail(UserError.UserNotFound);
 
         user.Phone = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return UserResult<UserDto>.Ok(UserMapper.ToDto(user));
+    }
+
+    public async Task<UserResult<UserDto>> UploadAvatarAsync(long userId, Stream stream, string contentType)
+    {
+        var extension = contentType switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/png" => ".png",
+            _ => null
+        };
+
+        if (extension is null)
+            return UserResult<UserDto>.Fail(UserError.FileTypeInvalid);
+
+        // Buffer the upload so oversized files can be rejected before writing to disk.
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        if (buffer.Length > 2 * 1024 * 1024)
+            return UserResult<UserDto>.Fail(UserError.FileTooLarge);
+
+        var user = await db.Users
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user is null)
+            return UserResult<UserDto>.Fail(UserError.UserNotFound);
+
+        var root = env.WebRootPath ?? Path.GetTempPath();
+        var avatarsDir = Path.Combine(root, "avatars");
+        Directory.CreateDirectory(avatarsDir);
+
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(avatarsDir, fileName);
+        await File.WriteAllBytesAsync(filePath, buffer.ToArray());
+
+        user.AvatarUrl = $"/avatars/{fileName}";
         user.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 

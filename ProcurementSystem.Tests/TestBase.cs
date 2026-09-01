@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 using ProcurementSystem.Data;
 using ProcurementSystem.Models;
 using ProcurementSystem.Services;
@@ -50,7 +52,8 @@ public abstract class TestBase : IDisposable
         return new AuthService(db, config);
     }
 
-    protected UserService CreateUserService(ProcurementDbContext db) => new(db);
+    protected UserService CreateUserService(ProcurementDbContext db) =>
+        new(db, new TestWebHostEnvironment());
 
     // Creates a department and an unbound employee (Username/PasswordHash null).
     protected async Task<(Department Dept, User Employee)> SeedUnboundEmployeeAsync(
@@ -88,5 +91,23 @@ public abstract class TestBase : IDisposable
     public void Dispose()
     {
         _connection.Dispose();
+    }
+
+    // Minimal IWebHostEnvironment whose WebRootPath points at a temp directory,
+    // so avatar upload tests write outside the developer's real wwwroot.
+    private sealed class TestWebHostEnvironment : IWebHostEnvironment
+    {
+        public string ApplicationName { get; set; } = "ProcurementSystem.Tests";
+
+        public string EnvironmentName { get; set; } = "Testing";
+
+        public string WebRootPath { get; set; } =
+            Path.Combine(Path.GetTempPath(), "procurement-system-tests");
+
+        public IFileProvider WebRootFileProvider { get; set; } = new NullFileProvider();
+
+        public string ContentRootPath { get; set; } = Path.GetTempPath();
+
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 }

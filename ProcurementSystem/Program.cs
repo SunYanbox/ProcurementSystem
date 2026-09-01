@@ -46,6 +46,9 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
+// Serve uploaded avatar files from wwwroot/avatars so AvatarUrl paths resolve.
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
