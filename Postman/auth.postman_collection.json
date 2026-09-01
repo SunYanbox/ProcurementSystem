@@ -794,6 +794,36 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "获取部门列表",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/departments",
+          "protocol": "http",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "departments"
+          ],
+          "port": "",
+          "query": []
+        },
+        "body": {
+          "mode": "none"
+        }
+      },
+      "response": []
     }
   ]
 }
