@@ -13,6 +13,10 @@ public class ProcurementDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ItemType> ItemTypes => Set<ItemType>();
+    public DbSet<Item> Items => Set<Item>();
+    public DbSet<StockItem> StockItems => Set<StockItem>();
+    public DbSet<StockTransaction> StockTransactions => Set<StockTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +51,46 @@ public class ProcurementDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ItemType>(entity =>
+        {
+            entity.HasIndex(t => t.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<Item>(entity =>
+        {
+            entity.HasOne(i => i.Type)
+                .WithMany(t => t.Items)
+                .HasForeignKey(i => i.TypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<StockItem>(entity =>
+        {
+            // One stock snapshot per item.
+            entity.HasIndex(s => s.ItemId).IsUnique();
+
+            // GUID byte array simulates rowversion on SQLite.
+            entity.Property(s => s.Version).IsConcurrencyToken();
+
+            entity.HasOne(s => s.Item)
+                .WithOne(i => i.StockItem)
+                .HasForeignKey<StockItem>(s => s.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<StockTransaction>(entity =>
+        {
+            entity.HasOne(t => t.Item)
+                .WithMany(i => i.Transactions)
+                .HasForeignKey(t => t.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(t => t.Operator)
+                .WithMany()
+                .HasForeignKey(t => t.OperatorId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
