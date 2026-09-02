@@ -17,6 +17,7 @@ public class ProcurementDbContext : DbContext
     public DbSet<Item> Items => Set<Item>();
     public DbSet<StockItem> StockItems => Set<StockItem>();
     public DbSet<StockTransaction> StockTransactions => Set<StockTransaction>();
+    public DbSet<ProcurementRequest> ProcurementRequests => Set<ProcurementRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -90,6 +91,30 @@ public class ProcurementDbContext : DbContext
             entity.HasOne(t => t.Operator)
                 .WithMany()
                 .HasForeignKey(t => t.OperatorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProcurementRequest>(entity =>
+        {
+            // Restrict deletion of users and items that still have procurement history.
+            entity.HasOne(r => r.Source)
+                .WithMany()
+                .HasForeignKey(r => r.SourceId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.AuditedBy)
+                .WithMany()
+                .HasForeignKey(r => r.AuditedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.PurchasedBy)
+                .WithMany()
+                .HasForeignKey(r => r.PurchasedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.Item)
+                .WithMany()
+                .HasForeignKey(r => r.ItemId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }
