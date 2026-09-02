@@ -267,6 +267,22 @@ public class AuthServiceTests : TestBase
         Assert.False(valid);
     }
 
+    [Fact]
+    public async Task LoginAsync_Fails_WhenUserInactive()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedBoundUserAsync(db);
+        employee.Working = false;
+        await db.SaveChangesAsync();
+        var auth = CreateAuthService(db);
+
+        var result = await auth.LoginAsync(new LoginRequest { Username = Username, Password = Password });
+
+        // 即使密码正确，离职员工也禁止登录，不签发任何令牌
+        Assert.Equal(AuthError.UserInactive, result.Error);
+        Assert.Null(result.Value);
+    }
+
     // Signs a JWT whose exp is already in the past, to prove VerifyAsync checks lifetime.
     private static string CreateExpiredJwt()
     {

@@ -731,4 +731,22 @@ public class WarehouseServiceTests : TestBase
 
     private static DateTime FixedUtc(int year, int month, int day) =>
         DateTime.SpecifyKind(new DateTime(year, month, day), DateTimeKind.Utc);
+
+    [Fact]
+    public async Task GetStockAsync_SerializesUpdatedAtWithUtcSuffix()
+    {
+        using var db = CreateDbContext();
+        var service = new WarehouseService(db);
+        var type = await SeedItemTypeAsync(db);
+        var item = await SeedItemAsync(db, type.Id, "A4复印纸");
+        var stock = await SeedStockAsync(db, item.Id, 10);
+        stock.UpdatedAt = FixedUtc(2026, 1, 1);
+        await db.SaveChangesAsync();
+
+        var result = await service.GetStockAsync(item.Id);
+
+        // SQLite 读取的 DateTime Kind 为 Unspecified，后端已补 Utc 序列化，确保前端能正确解析
+        Assert.Null(result.Error);
+        Assert.EndsWith("Z", result.Value!.UpdatedAt);
+    }
 }

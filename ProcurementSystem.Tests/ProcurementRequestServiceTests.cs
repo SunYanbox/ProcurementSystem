@@ -195,6 +195,64 @@ public class ProcurementRequestServiceTests : TestBase
         Assert.Equal(ProcurementRequestError.ItemNotActive, result.Error);
     }
 
+    [Fact]
+    public async Task CreateDraftAsync_Fails_WhenSourceInactive()
+    {
+        using var db = CreateDbContext();
+        var service = new ProcurementRequestService(db);
+        var employee = await SeedEmployeeAsync(db);
+        employee.Working = false;
+        await db.SaveChangesAsync();
+
+        var result = await service.CreateDraftAsync(employee.Id, new DTOs.CreateProcurementRequestRequest
+        {
+            CustomItemName = "定制笔记本",
+            Quantity = 1,
+            Purpose = "测试"
+        });
+
+        // 离职员工不能创建采购申请，即使物料信息合法
+        Assert.Equal(ProcurementRequestError.SourceInactive, result.Error);
+        Assert.Null(result.Value);
+    }
+
+    [Fact]
+    public async Task EditDraftAsync_Fails_WhenSourceInactive()
+    {
+        using var db = CreateDbContext();
+        var service = new ProcurementRequestService(db);
+        var employee = await SeedEmployeeAsync(db);
+        var request = await CreateDraftAsync(db, service, employee.Id);
+        employee.Working = false;
+        await db.SaveChangesAsync();
+
+        var result = await service.EditDraftAsync(request.Id, employee.Id, new DTOs.UpdateProcurementRequestRequest
+        {
+            Quantity = 8
+        });
+
+        // 草稿创建于在职期间，但离职后不能编辑
+        Assert.Equal(ProcurementRequestError.SourceInactive, result.Error);
+        Assert.Null(result.Value);
+    }
+
+    [Fact]
+    public async Task SubmitAsync_Fails_WhenSourceInactive()
+    {
+        using var db = CreateDbContext();
+        var service = new ProcurementRequestService(db);
+        var employee = await SeedEmployeeAsync(db);
+        var request = await CreateDraftAsync(db, service, employee.Id);
+        employee.Working = false;
+        await db.SaveChangesAsync();
+
+        var result = await service.SubmitAsync(request.Id, employee.Id);
+
+        // 草稿创建于在职期间，但离职后不能提交
+        Assert.Equal(ProcurementRequestError.SourceInactive, result.Error);
+        Assert.Null(result.Value);
+    }
+
     // EditDraftAsync
 
     [Fact]
@@ -626,5 +684,23 @@ public class ProcurementRequestServiceTests : TestBase
 
         Assert.Null(result.Error);
         return (await db.ProcurementRequests.FindAsync(result.Value!.Id))!;
+    }
+
+    [Fact]
+    public async Task SubmitAsync_SerializesRequestedAtWithUtcSuffix()
+    {
+        using var db = CreateDbContext();
+        var service = new ProcurementRequestService(db);
+        var employee = await SeedEmployeeAsync(db);
+        var request = await CreateDraftAsync(db, service, employee.Id);
+        var saved = await db.ProcurementRequests.FindAsync(request.Id);
+        saved!.RequestedAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1), DateTimeKind.Utc);
+        await db.SaveChangesAsync();
+
+        var result = await service.SubmitAsync(request.Id, employee.Id);
+
+        // 后端已补 Utc 序列化，确保前端能正确解析时间为本地时区
+        Assert.Null(result.Error);
+        Assert.EndsWith("Z", result.Value!.RequestedAt);
     }
 }
