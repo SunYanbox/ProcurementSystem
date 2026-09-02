@@ -322,7 +322,9 @@ public class WarehouseService(ProcurementDbContext db) : IWarehouseService
         ItemSpecification = stockItem.Item.Specification,
         Unit = stockItem.Item.Unit,
         Quantity = stockItem.Quantity,
-        UpdatedAt = stockItem.UpdatedAt.ToString("o")
+        // SQLite 读取的 DateTime Kind 为 Unspecified，ToString("o") 不含 Z 后缀，
+        // 前端会把 UTC 值误当作本地时间；此处显式标为 Utc 以输出带 Z 的 ISO 字符串。
+        UpdatedAt = DateTime.SpecifyKind(stockItem.UpdatedAt, DateTimeKind.Utc).ToString("o")
     };
 
     private static StockTransactionDto ToStockTransactionDto(StockTransaction transaction) => new()
@@ -336,6 +338,7 @@ public class WarehouseService(ProcurementDbContext db) : IWarehouseService
         ReferenceId = transaction.ReferenceId,
         Note = transaction.Note,
         OperatorName = transaction.Operator.Name,
-        CreatedAt = transaction.CreatedAt.ToString("o")
+        // 同 ToStockItemDto：补齐 Kind 为 Utc，避免前端将 UTC 当本地时间解析。
+        CreatedAt = DateTime.SpecifyKind(transaction.CreatedAt, DateTimeKind.Utc).ToString("o")
     };
 }
