@@ -4,6 +4,7 @@ import MainLayout from '../layouts/MainLayout.vue'
 import HomeView from '../views/HomeView.vue'
 import UserManagementView from '../views/UserManagementView.vue'
 import DepartmentsView from '../views/DepartmentsView.vue'
+import WarehouseView from '../views/WarehouseView.vue'
 import ProfileView from '../views/ProfileView.vue'
 
 const router = createRouter({
@@ -36,6 +37,12 @@ const router = createRouter({
           name: 'departments',
           component: DepartmentsView,
           meta: { title: '部门列表', requiresAdmin: true },
+        },
+        {
+          path: 'warehouse',
+          name: 'warehouse',
+          component: WarehouseView,
+          meta: { title: '仓库库存' },
         },
         {
           path: 'profile',

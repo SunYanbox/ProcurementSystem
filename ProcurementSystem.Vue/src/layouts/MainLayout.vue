@@ -8,6 +8,7 @@ import {
   HomeFilled,
   User,
   OfficeBuilding,
+  Goods,
   Postcard,
   ArrowDown,
 } from '@element-plus/icons-vue'
@@ -52,6 +53,10 @@ function handleLogout() {
         <el-menu-item v-if="auth.isAdmin" index="/departments">
           <el-icon><OfficeBuilding /></el-icon>
           <span>部门列表</span>
+        </el-menu-item>
+        <el-menu-item index="/warehouse">
+          <el-icon><Goods /></el-icon>
+          <span>仓库库存</span>
         </el-menu-item>
         <el-menu-item index="/profile">
           <el-icon><Postcard /></el-icon>
