@@ -17,7 +17,9 @@ public enum AuthError
     WorkIdNotFound,
     UsernameTaken,
     WorkIdAlreadyBound,
-    TokenInvalid
+    TokenInvalid,
+    // 账号存在但员工已标记离职，禁止继续登录
+    UserInactive
 }
 
 // Distinguishes business failures so the controller can map each to the
@@ -68,6 +70,10 @@ public class AuthService(ProcurementDbContext db, IConfiguration config) : IAuth
         {
             return AuthResult<AuthResponse>.Fail(AuthError.InvalidCredentials);
         }
+
+        // 离职员工禁止登录，即使密码正确也不签发令牌
+        if (!user.Working)
+            return AuthResult<AuthResponse>.Fail(AuthError.UserInactive);
 
         var (accessToken, refreshToken) = CreateTokens(user);
         await db.SaveChangesAsync();

@@ -29,6 +29,7 @@ public class ProcurementRequestsController(IProcurementRequestService procuremen
         var result = await procurementRequestService.CreateDraftAsync(userId.Value, dto);
         return result.Error switch
         {
+            ProcurementRequestError.SourceInactive => StatusCode(StatusCodes.Status403Forbidden),
             ProcurementRequestError.InvalidItemOrCustom or
             ProcurementRequestError.QuantityNotPositive or
             ProcurementRequestError.ItemNotFound or

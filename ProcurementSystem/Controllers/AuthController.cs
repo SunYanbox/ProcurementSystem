@@ -15,6 +15,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         return result.Error switch
         {
             AuthError.InvalidCredentials => BadRequest(),
+            AuthError.UserInactive => StatusCode(StatusCodes.Status403Forbidden),
             null => Ok(result.Value),
             _ => StatusCode(500)
         };

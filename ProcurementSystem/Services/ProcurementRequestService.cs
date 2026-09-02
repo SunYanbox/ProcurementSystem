@@ -18,7 +18,9 @@ public enum ProcurementRequestError
     NotCancellable,
     NotPurchasable,
     InvalidDecision,
-    RefusalReasonRequired
+    RefusalReasonRequired,
+    // 离职员工不能创建新的采购申请
+    SourceInactive
 }
 
 public record ProcurementRequestResult<T>(T? Value, ProcurementRequestError? Error)
@@ -57,6 +59,11 @@ public class ProcurementRequestService(ProcurementDbContext db) : IProcurementRe
     public async Task<ProcurementRequestResult<ProcurementRequestDto>> CreateDraftAsync(
         long userId, CreateProcurementRequestRequest dto)
     {
+        // 离职员工不能创建新的采购申请，即便其登录令牌仍在有效期内
+        var source = await db.Users.FindAsync(userId);
+        if (source is null || !source.Working)
+            return ProcurementRequestResult<ProcurementRequestDto>.Fail(ProcurementRequestError.SourceInactive);
+
         var validation = await ValidateItemOrCustomAsync(dto.ItemId, dto.CustomItemName, dto.CustomSpecification, dto.Quantity);
         if (validation is not null)
             return ProcurementRequestResult<ProcurementRequestDto>.Fail(validation.Value);
@@ -81,6 +88,11 @@ public class ProcurementRequestService(ProcurementDbContext db) : IProcurementRe
     public async Task<ProcurementRequestResult<ProcurementRequestDto>> EditDraftAsync(
         long requestId, long userId, UpdateProcurementRequestRequest dto)
     {
+        // 离职员工不能编辑既有草稿，即便它创建于在职期间
+        var source = await db.Users.FindAsync(userId);
+        if (source is null || !source.Working)
+            return ProcurementRequestResult<ProcurementRequestDto>.Fail(ProcurementRequestError.SourceInactive);
+
         var request = await db.ProcurementRequests.FindAsync(requestId);
         if (request is null)
             return ProcurementRequestResult<ProcurementRequestDto>.Fail(ProcurementRequestError.RequestNotFound);
@@ -125,6 +137,11 @@ public class ProcurementRequestService(ProcurementDbContext db) : IProcurementRe
 
     public async Task<ProcurementRequestResult<ProcurementRequestDto>> SubmitAsync(long requestId, long userId)
     {
+        // 草稿可能创建于在职期间，但提交时若已离职则必须拦截
+        var source = await db.Users.FindAsync(userId);
+        if (source is null || !source.Working)
+            return ProcurementRequestResult<ProcurementRequestDto>.Fail(ProcurementRequestError.SourceInactive);
+
         var request = await db.ProcurementRequests.FindAsync(requestId);
         if (request is null)
             return ProcurementRequestResult<ProcurementRequestDto>.Fail(ProcurementRequestError.RequestNotFound);
