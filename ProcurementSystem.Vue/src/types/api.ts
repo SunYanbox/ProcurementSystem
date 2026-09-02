@@ -3,6 +3,30 @@ export interface DepartmentDto {
   name: string
 }
 
+export interface CreateDepartmentRequest {
+  name: string
+}
+
+export interface ItemTypeDto {
+  id: number
+  name: string
+  description: string | null
+}
+
+export interface CreateItemTypeRequest {
+  name: string
+  description?: string | null
+}
+
+export interface CreateItemRequest {
+  name: string
+  typeId: number
+  description?: string | null
+  specification: string
+  unit: string
+  price: number
+}
+
 export interface UserDto {
   id: number
   username: string | null

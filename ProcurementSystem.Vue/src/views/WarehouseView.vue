@@ -1,19 +1,33 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
-import { createTransaction, listStocks, listTransactions } from '../api/warehouse'
-import type { CreateTransactionRequest, StockItemDto, StockTransactionDto } from '../types/api'
+import {
+  createItem,
+  createItemType,
+  createTransaction,
+  listItemTypes,
+  listStocks,
+} from '../api/warehouse'
+import type {
+  CreateItemRequest,
+  CreateItemTypeRequest,
+  CreateTransactionRequest,
+  ItemTypeDto,
+  StockItemDto,
+} from '../types/api'
 
 const auth = useAuthStore()
+const router = useRouter()
 
 const stocks = ref<StockItemDto[]>([])
+const itemTypes = ref<ItemTypeDto[]>([])
 const loading = ref(false)
 const search = ref('')
 const lowStockOnly = ref(false)
 
 const txVisible = ref(false)
-const txLoading = ref(false)
 const currentStock = ref<StockItemDto | null>(null)
 const txForm = reactive<CreateTransactionRequest>({
   type: 'ManualInbound',
@@ -21,18 +35,33 @@ const txForm = reactive<CreateTransactionRequest>({
   note: null,
 })
 
-const ledgerVisible = ref(false)
-const ledgerLoading = ref(false)
-const transactions = ref<StockTransactionDto[]>([])
-const ledgerItemId = ref<number | undefined>(undefined)
+// 物料类型创建弹窗状态
+const typeVisible = ref(false)
+const typeForm = reactive<CreateItemTypeRequest>({ name: '', description: null })
+
+// 物料创建弹窗状态
+const itemVisible = ref(false)
+const itemForm = reactive<CreateItemRequest>({
+  name: '',
+  typeId: 0,
+  description: null,
+  specification: '',
+  unit: '',
+  price: 0,
+})
 
 async function load() {
   loading.value = true
   try {
-    stocks.value = await listStocks({
-      search: search.value || undefined,
-      lowStock: lowStockOnly.value || undefined,
-    })
+    const [stockRows, typeRows] = await Promise.all([
+      listStocks({
+        search: search.value || undefined,
+        lowStock: lowStockOnly.value || undefined,
+      }),
+      listItemTypes(),
+    ])
+    stocks.value = stockRows
+    itemTypes.value = typeRows
   } finally {
     loading.value = false
   }
@@ -65,15 +94,56 @@ async function submitTransaction() {
   }
 }
 
-async function openLedger(stock: StockItemDto) {
-  ledgerItemId.value = stock.itemId
-  ledgerVisible.value = true
-  ledgerLoading.value = true
-  try {
-    transactions.value = await listTransactions({ itemId: stock.itemId })
-  } finally {
-    ledgerLoading.value = false
+function openTypeCreate() {
+  typeForm.name = ''
+  typeForm.description = null
+  typeVisible.value = true
+}
+
+async function submitType() {
+  if (!typeForm.name.trim()) {
+    ElMessage.warning('类型名称不能为空')
+    return
   }
+  try {
+    await createItemType({ name: typeForm.name.trim(), description: typeForm.description })
+    ElMessage.success('物料类型已创建')
+    typeVisible.value = false
+    await load()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.detail ?? '创建失败，可能是名称已存在')
+  }
+}
+
+function openItemCreate() {
+  Object.assign(itemForm, {
+    name: '',
+    typeId: itemTypes.value[0]?.id ?? 0,
+    description: null,
+    specification: '',
+    unit: '',
+    price: 0,
+  })
+  itemVisible.value = true
+}
+
+async function submitItem() {
+  if (!itemForm.name.trim() || !itemForm.typeId) {
+    ElMessage.warning('物料名称和类型必填')
+    return
+  }
+  try {
+    await createItem(itemForm)
+    ElMessage.success('物料已创建')
+    itemVisible.value = false
+    await load()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.detail ?? '创建失败')
+  }
+}
+
+function goToTransactions() {
+  router.push({ name: 'transactions' })
 }
 
 onMounted(load)
@@ -103,6 +173,9 @@ onMounted(load)
                 <el-button @click="load">搜索</el-button>
               </template>
             </el-input>
+            <el-button v-if="auth.isAdmin" @click="openTypeCreate">新建物料类型</el-button>
+            <el-button v-if="auth.isAdmin" type="primary" @click="openItemCreate">新建物料</el-button>
+            <el-button v-if="auth.isAdmin" @click="goToTransactions">变动记录</el-button>
           </div>
         </div>
       </template>
@@ -141,7 +214,7 @@ onMounted(load)
             >
               出库
             </el-button>
-            <el-button v-if="auth.isAdmin" link type="primary" @click="openLedger(row)">明细</el-button>
+            <el-button v-if="auth.isAdmin" link type="primary" @click="goToTransactions">明细</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -172,25 +245,54 @@ onMounted(load)
       </template>
     </el-dialog>
 
-    <el-drawer v-model="ledgerVisible" title="库存变动明细" size="520px">
-      <el-table :data="transactions" v-loading="ledgerLoading" stripe>
-        <el-table-column label="变动" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.quantityChange > 0 ? 'success' : 'warning'">
-              {{ row.quantityChange > 0 ? '+' : '' }}{{ row.quantityChange }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="type" label="类型" width="130" />
-        <el-table-column prop="operatorName" label="操作人" width="110" />
-        <el-table-column prop="note" label="备注" min-width="120" />
-        <el-table-column label="时间" width="170">
-          <template #default="{ row }">
-            {{ new Date(row.createdAt).toLocaleString() }}
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-drawer>
+    <el-dialog v-model="typeVisible" title="新建物料类型" width="420px">
+      <el-form label-width="90px">
+        <el-form-item label="类型名称">
+          <el-input v-model="typeForm.name" placeholder="必填" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="typeForm.description" placeholder="可选" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="typeVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitType">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="itemVisible" title="新建物料" width="480px">
+      <el-form label-width="90px">
+        <el-form-item label="物料名称">
+          <el-input v-model="itemForm.name" placeholder="必填" />
+        </el-form-item>
+        <el-form-item label="物料类型">
+          <el-select v-model="itemForm.typeId" style="width: 100%">
+            <el-option
+              v-for="type in itemTypes"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="规格">
+          <el-input v-model="itemForm.specification" placeholder="例如 500张/包" />
+        </el-form-item>
+        <el-form-item label="单位">
+          <el-input v-model="itemForm.unit" placeholder="例如 包" />
+        </el-form-item>
+        <el-form-item label="单价">
+          <el-input-number v-model="itemForm.price" :min="0" :precision="2" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="itemForm.description" placeholder="可选" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="itemVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitItem">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

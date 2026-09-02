@@ -1,10 +1,30 @@
 import http from './http'
 import type {
+  CreateItemRequest,
+  CreateItemTypeRequest,
   CreateTransactionRequest,
   ItemDto,
+  ItemTypeDto,
   StockItemDto,
   StockTransactionDto,
 } from '../types/api'
+
+export async function listItemTypes(): Promise<ItemTypeDto[]> {
+  const { data } = await http.get<ItemTypeDto[]>('/warehouse/item-types')
+  return data
+}
+
+export async function createItemType(
+  dto: CreateItemTypeRequest,
+): Promise<ItemTypeDto> {
+  const { data } = await http.post<ItemTypeDto>('/warehouse/item-types', dto)
+  return data
+}
+
+export async function createItem(dto: CreateItemRequest): Promise<ItemDto> {
+  const { data } = await http.post<ItemDto>('/warehouse/items', dto)
+  return data
+}
 
 export async function listItems(params?: {
   search?: string

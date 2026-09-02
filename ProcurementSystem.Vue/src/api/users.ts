@@ -32,3 +32,13 @@ export async function updateUser(
   const { data } = await http.put<UserDto>(`/users/${id}`, dto)
   return data
 }
+
+// 头像上传是 multipart/form-data，需显式设置请求头让 axios 识别边界
+// axios 会自动为 FormData 生成正确的 Content-Type 并附带 boundary
+
+export async function uploadAvatar(file: File): Promise<UserDto> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await http.post<UserDto>('/users/me/avatar', formData)
+  return data
+}

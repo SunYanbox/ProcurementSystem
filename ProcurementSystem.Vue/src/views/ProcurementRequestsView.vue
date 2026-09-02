@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
+import { getMe } from '../api/users'
 import {
   cancel,
   createDraft,
@@ -17,9 +18,11 @@ import type {
   CreateProcurementRequestRequest,
   ItemDto,
   ProcurementRequestDto,
+  UserDto,
 } from '../types/api'
 
 const auth = useAuthStore()
+const me = ref<UserDto | null>(null)
 
 const requests = ref<ProcurementRequestDto[]>([])
 const items = ref<ItemDto[]>([])
@@ -59,6 +62,8 @@ const statusLabel: Record<string, string> = {
 const formVisible = ref(false)
 const isEdit = ref(false)
 const currentId = ref<number | null>(null)
+// sourceType 区分目录物料申请与自定义物料申请，避免两者混用导致表单状态混乱
+const sourceType = ref<'catalog' | 'custom'>('catalog')
 const form = reactive<CreateProcurementRequestRequest>({
   itemId: null,
   customItemName: null,
@@ -97,6 +102,7 @@ async function loadItems() {
 function openCreate() {
   isEdit.value = false
   currentId.value = null
+  sourceType.value = 'catalog'
   Object.assign(form, {
     itemId: null,
     customItemName: null,
@@ -110,6 +116,8 @@ function openCreate() {
 function openEdit(row: ProcurementRequestDto) {
   isEdit.value = true
   currentId.value = row.id
+  // 根据既有记录是否引用目录物料来决定编辑时的来源类型
+  sourceType.value = row.itemId ? 'catalog' : 'custom'
   Object.assign(form, {
     itemId: row.itemId,
     customItemName: row.customItemName,
@@ -121,11 +129,11 @@ function openEdit(row: ProcurementRequestDto) {
 }
 
 async function submitForm() {
-  // 目录物料与自定义物料互斥：选择了目录物料则清空自定义字段
+  // 目录物料与自定义物料互斥：目录申请清空自定义字段，自定义申请不传 itemId
   const payload: CreateProcurementRequestRequest = {
-    itemId: form.itemId,
-    customItemName: form.itemId ? null : form.customItemName,
-    customSpecification: form.itemId ? null : form.customSpecification,
+    itemId: sourceType.value === 'catalog' ? form.itemId : null,
+    customItemName: sourceType.value === 'custom' ? form.customItemName : null,
+    customSpecification: sourceType.value === 'custom' ? form.customSpecification : null,
     quantity: form.quantity,
     purpose: form.purpose,
   }
@@ -210,7 +218,21 @@ function formatTime(value: string | null) {
   return value ? new Date(value).toLocaleString() : '-'
 }
 
+async function loadMe() {
+  try {
+    me.value = await getMe()
+  } catch {
+    // 当前用户信息加载失败时忽略，操作权限判断将退化为仅按角色
+  }
+}
+
+// 判断记录是否属于当前登录用户，用于让管理员也能管理自己创建的草稿
+function isMine(row: ProcurementRequestDto) {
+  return me.value?.id === row.sourceId
+}
+
 onMounted(async () => {
+  await loadMe()
   await loadItems()
   await load()
 })
@@ -270,24 +292,24 @@ onMounted(async () => {
         </el-table-column>
         <el-table-column label="操作" width="240" align="center" fixed="right">
           <template #default="{ row }">
-            <!-- 员工：草稿可编辑/提交/取消 -->
-            <template v-if="!auth.isAdmin && row.status === 'Draft'">
+            <!-- 本人草稿可编辑/提交/取消（含管理员自己创建的申请） -->
+            <template v-if="isMine(row) && row.status === 'Draft'">
               <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
               <el-button link type="success" @click="doSubmit(row)">提交</el-button>
               <el-button link type="warning" @click="doCancel(row)">取消</el-button>
             </template>
-            <!-- 员工：待审批可取消 -->
+            <!-- 本人待审批可取消 -->
             <el-button
-              v-else-if="!auth.isAdmin && row.status === 'Pending'"
+              v-else-if="isMine(row) && row.status === 'Pending'"
               link
               type="warning"
               @click="doCancel(row)"
             >
               取消
             </el-button>
-            <!-- 管理员：待审批可审批 -->
+            <!-- 管理员：待审批可审批（非本人） -->
             <el-button
-              v-if="auth.isAdmin && row.status === 'Pending'"
+              v-if="auth.isAdmin && row.status === 'Pending' && !isMine(row)"
               link
               type="primary"
               @click="openAudit(row)"
@@ -317,15 +339,18 @@ onMounted(async () => {
       width="520px"
     >
       <el-form label-width="90px">
-        <el-form-item label="物料类型">
-          <el-radio-group v-model="form.itemId">
-            <el-radio :value="null">自定义</el-radio>
+        <el-form-item label="物料来源">
+          <el-radio-group v-model="sourceType">
+            <el-radio value="catalog">目录物料</el-radio>
+            <el-radio value="custom">自定义物料</el-radio>
           </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="sourceType === 'catalog'" label="选择物料">
           <el-select
             v-model="form.itemId"
             placeholder="选择目录物料"
             clearable
-            style="width: 100%; margin-top: 8px"
+            style="width: 100%"
           >
             <el-option
               v-for="item in items"
@@ -335,12 +360,14 @@ onMounted(async () => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="!form.itemId" label="物料名称">
-          <el-input v-model="form.customItemName" placeholder="自定义物料名称" />
-        </el-form-item>
-        <el-form-item v-if="!form.itemId" label="规格">
-          <el-input v-model="form.customSpecification" placeholder="自定义规格" />
-        </el-form-item>
+        <template v-if="sourceType === 'custom'">
+          <el-form-item label="物料名称">
+            <el-input v-model="form.customItemName" placeholder="自定义物料名称" />
+          </el-form-item>
+          <el-form-item label="规格">
+            <el-input v-model="form.customSpecification" placeholder="自定义规格" />
+          </el-form-item>
+        </template>
         <el-form-item label="数量">
           <el-input-number v-model="form.quantity" :min="1" />
         </el-form-item>

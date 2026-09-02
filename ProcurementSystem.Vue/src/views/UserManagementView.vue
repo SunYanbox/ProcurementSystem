@@ -12,20 +12,35 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const currentId = ref<number | null>(null)
 
-const form = reactive<CreateUserRequest>({
+const search = ref('')
+const departmentFilter = ref<number | undefined>(undefined)
+
+const form = reactive<{
+  workId: string
+  name: string
+  email: string | null
+  phone: string | null
+  departmentId: number
+  role: string
+  working: boolean
+}>({
   workId: '',
   name: '',
   email: null,
   phone: null,
   departmentId: 0,
   role: 'Employee',
+  working: true,
 })
 
 async function load() {
   loading.value = true
   try {
     const [userRows, deptRows] = await Promise.all([
-      listUsers(),
+      listUsers({
+        search: search.value || undefined,
+        departmentId: departmentFilter.value,
+      }),
       listDepartments(),
     ])
     users.value = userRows
@@ -45,6 +60,7 @@ function openCreate() {
     phone: null,
     departmentId: departments.value[0]?.id ?? 0,
     role: 'Employee',
+    working: true,
   })
   dialogVisible.value = true
 }
@@ -59,6 +75,7 @@ function openEdit(user: UserDto) {
     phone: user.phone,
     departmentId: user.departmentId,
     role: user.role,
+    working: user.working,
   })
   dialogVisible.value = true
 }
@@ -72,10 +89,18 @@ async function submit() {
         phone: form.phone,
         departmentId: form.departmentId,
         role: form.role,
+        working: form.working,
       })
       ElMessage.success('用户已更新')
     } else {
-      await createUser(form)
+      await createUser({
+        workId: form.workId,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        departmentId: form.departmentId,
+        role: form.role,
+      })
       ElMessage.success('用户已创建')
     }
     dialogVisible.value = false
@@ -94,13 +119,44 @@ onMounted(load)
       <template #header>
         <div class="page-header">
           <span class="page-title">用户管理</span>
-          <el-button type="primary" @click="openCreate">新建用户</el-button>
+          <div class="page-tools">
+            <el-select
+              v-model="departmentFilter"
+              placeholder="按部门筛选"
+              clearable
+              style="width: 180px"
+              @change="load"
+            >
+              <el-option
+                v-for="dept in departments"
+                :key="dept.id"
+                :label="dept.name"
+                :value="dept.id"
+              />
+            </el-select>
+            <el-input
+              v-model="search"
+              placeholder="搜索工号/姓名/账号"
+              clearable
+              style="width: 220px"
+              @keyup.enter="load"
+              @clear="load"
+            >
+              <template #append>
+                <el-button @click="load">搜索</el-button>
+              </template>
+            </el-input>
+            <el-button type="primary" @click="openCreate">新建用户</el-button>
+          </div>
         </div>
       </template>
 
       <el-table :data="users" v-loading="loading" stripe>
         <el-table-column prop="workId" label="工号" width="140" />
         <el-table-column prop="name" label="姓名" min-width="120" />
+        <el-table-column label="账号" min-width="140">
+          <template #default="{ row }">{{ row.username ?? '-' }}</template>
+        </el-table-column>
         <el-table-column prop="departmentName" label="部门" min-width="140" />
         <el-table-column label="角色" width="110">
           <template #default="{ row }">
@@ -154,6 +210,9 @@ onMounted(load)
             <el-option label="管理员" value="Admin" />
           </el-select>
         </el-form-item>
+        <el-form-item v-if="isEdit" label="在职">
+          <el-switch v-model="form.working" active-text="在职" inactive-text="离职" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -182,5 +241,11 @@ onMounted(load)
 .page-title {
   font-size: 16px;
   font-weight: 600;
+}
+
+.page-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 </style>

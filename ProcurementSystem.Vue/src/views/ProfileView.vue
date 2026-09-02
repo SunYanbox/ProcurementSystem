@@ -1,19 +1,45 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { getMe } from '../api/users'
+import { ElMessage } from 'element-plus'
+import { getMe, uploadAvatar } from '../api/users'
 import type { UserDto } from '../types/api'
 
 const me = ref<UserDto | null>(null)
 const loading = ref(false)
+const uploading = ref(false)
 
-onMounted(async () => {
+async function load() {
   loading.value = true
   try {
     me.value = await getMe()
   } finally {
     loading.value = false
   }
-})
+}
+
+async function handleAvatarChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  // 仅接受 jpg/png，与后端 UploadAvatarAsync 支持的 Content-Type 保持一致
+  if (!['image/jpeg', 'image/png'].includes(file.type)) {
+    ElMessage.warning('仅支持 JPG/PNG 图片')
+    input.value = ''
+    return
+  }
+  uploading.value = true
+  try {
+    me.value = await uploadAvatar(file)
+    ElMessage.success('头像已更新')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.detail ?? '上传失败')
+  } finally {
+    uploading.value = false
+    input.value = ''
+  }
+}
+
+onMounted(load)
 </script>
 
 <template>
@@ -34,11 +60,16 @@ onMounted(async () => {
               {{ me?.role === 'Admin' ? '管理员' : '员工' }}
             </el-tag>
           </div>
+          <label class="avatar-upload" :class="{ disabled: uploading }">
+            {{ uploading ? '上传中...' : '更换头像' }}
+            <input type="file" accept="image/jpeg,image/png" hidden @change="handleAvatarChange" />
+          </label>
         </div>
 
         <el-descriptions v-if="me" :column="1" border class="profile-desc">
           <el-descriptions-item label="工号">{{ me.workId }}</el-descriptions-item>
           <el-descriptions-item label="姓名">{{ me.name }}</el-descriptions-item>
+          <el-descriptions-item label="账号">{{ me.username ?? '-' }}</el-descriptions-item>
           <el-descriptions-item label="部门">{{ me.departmentName }}</el-descriptions-item>
           <el-descriptions-item label="邮箱">{{ me.email ?? '-' }}</el-descriptions-item>
           <el-descriptions-item label="电话">{{ me.phone ?? '-' }}</el-descriptions-item>
@@ -76,6 +107,26 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 600;
   color: #1f2937;
+}
+
+.avatar-upload {
+  display: inline-block;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: #409eff;
+  border: 1px solid #409eff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.avatar-upload:hover {
+  opacity: 0.8;
+}
+
+.avatar-upload.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .profile-desc {

@@ -5,6 +5,7 @@ import HomeView from '../views/HomeView.vue'
 import UserManagementView from '../views/UserManagementView.vue'
 import DepartmentsView from '../views/DepartmentsView.vue'
 import WarehouseView from '../views/WarehouseView.vue'
+import TransactionsView from '../views/TransactionsView.vue'
 import ProcurementRequestsView from '../views/ProcurementRequestsView.vue'
 import ProfileView from '../views/ProfileView.vue'
 
@@ -44,6 +45,12 @@ const router = createRouter({
           name: 'warehouse',
           component: WarehouseView,
           meta: { title: '仓库库存' },
+        },
+        {
+          path: 'warehouse/transactions',
+          name: 'transactions',
+          component: TransactionsView,
+          meta: { title: '库存变动记录', requiresAdmin: true },
         },
         {
           path: 'procurements',

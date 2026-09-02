@@ -1,26 +1,54 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { listDepartments } from '../api/departments'
+import { onMounted, reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { createDepartment, listDepartments } from '../api/departments'
 import type { DepartmentDto } from '../types/api'
 
 const departments = ref<DepartmentDto[]>([])
 const loading = ref(false)
+const dialogVisible = ref(false)
+const form = reactive<{ name: string }>({ name: '' })
 
-onMounted(async () => {
+async function load() {
   loading.value = true
   try {
     departments.value = await listDepartments()
   } finally {
     loading.value = false
   }
-})
+}
+
+function openCreate() {
+  form.name = ''
+  dialogVisible.value = true
+}
+
+async function submit() {
+  if (!form.name.trim()) {
+    ElMessage.warning('部门名称不能为空')
+    return
+  }
+  try {
+    await createDepartment({ name: form.name.trim() })
+    ElMessage.success('部门已创建')
+    dialogVisible.value = false
+    await load()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.detail ?? '创建失败，可能是部门名称已存在')
+  }
+}
+
+onMounted(load)
 </script>
 
 <template>
   <div class="page">
     <el-card shadow="never" class="page-card">
       <template #header>
-        <span class="page-title">部门列表</span>
+        <div class="page-header">
+          <span class="page-title">部门列表</span>
+          <el-button type="primary" @click="openCreate">新建部门</el-button>
+        </div>
       </template>
 
       <el-table :data="departments" v-loading="loading" stripe>
@@ -28,12 +56,35 @@ onMounted(async () => {
         <el-table-column prop="name" label="部门名称" />
       </el-table>
     </el-card>
+
+    <el-dialog v-model="dialogVisible" title="新建部门" width="420px">
+      <el-form label-width="90px">
+        <el-form-item label="部门名称">
+          <el-input v-model="form.name" placeholder="请输入部门名称" @keyup.enter="submit" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submit">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <style scoped>
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
 .page-card {
   border-radius: 8px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .page-title {
