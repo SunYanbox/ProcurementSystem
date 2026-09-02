@@ -9,7 +9,7 @@ namespace DevTools.Users;
 internal static class UserCommands
 {
     public static readonly string[] DefaultDeleteWorkIds =
-        { "B001", "A001", "ADMIN001", "W001", "WADMIN001" };
+        { "B001", "A001", "ADMIN001", "W001", "WADMIN001", "P001", "PADMIN001" };
 
     public static async Task<int> DeleteUserAsync(ProcurementDbContext db, string? workId)
     {

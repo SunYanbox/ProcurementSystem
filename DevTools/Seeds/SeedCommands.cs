@@ -8,7 +8,8 @@ namespace DevTools.Seeds;
 // prevents the two lists from drifting apart.
 internal static class SeedCommands
 {
-    public static readonly string[] SeedWorkIds = { "A001", "ADMIN001", "W001", "WADMIN001" };
+    public static readonly string[] SeedWorkIds =
+        { "A001", "ADMIN001", "W001", "WADMIN001", "P001", "PADMIN001" };
 
     public static async Task<int> SeedAllAsync(ProcurementDbContext db)
     {
@@ -17,7 +18,9 @@ internal static class SeedCommands
             await SeedUserAsync(db, "A001", "测试员工", Role.Employee),
             await SeedUserAsync(db, "ADMIN001", "系统管理员", Role.Admin),
             await SeedUserAsync(db, "W001", "仓库测试员工", Role.Employee),
-            await SeedUserAsync(db, "WADMIN001", "仓库管理员", Role.Admin)
+            await SeedUserAsync(db, "WADMIN001", "仓库管理员", Role.Admin),
+            await SeedUserAsync(db, "P001", "采购测试员工", Role.Employee),
+            await SeedUserAsync(db, "PADMIN001", "采购管理员", Role.Admin)
         };
 
         return results.Any(r => r != 0) ? 1 : 0;
