@@ -1,0 +1,828 @@
+{
+  "info": {
+    "_postman_id": "3c8f5a1e-6b2d-4f7a-9e5c-1d4b8f2a6c7e",
+    "name": "Procurement Requests API",
+    "description": "Procurement request state machine endpoints: create/edit/submit/cancel, admin audit, purchase inbound, and querying. Run prerequisites: dotnet run --project DevTools seed-purchase and dotnet run --project DevTools seed-purchase-admin, then run this collection. The employee and admin requests register their accounts first, then log in; tokens are stored as collection variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5074",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "work_id",
+      "value": "P001",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "username",
+      "value": "purchaseuser",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "password",
+      "value": "purpass123",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_work_id",
+      "value": "PADMIN001",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_username",
+      "value": "purchaseadmin",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_password",
+      "value": "puradminpass123",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "admin_access_token",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "item_id",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "created_request_id",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "cancel_request_id",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    },
+    {
+      "key": "reject_request_id",
+      "value": "",
+      "type": "string",
+      "disabled": false
+    }
+  ],
+  "item": [
+    {
+      "name": "员工注册",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 409) {",
+              "    pm.collectionVariables.set('registration_ok', 'true');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"workId\": \"{{work_id}}\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"passwordAgain\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "员工登录",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var data = pm.response.json();",
+              "pm.collectionVariables.set('access_token', data.accessToken);",
+              "pm.collectionVariables.set('refresh_token', data.refreshToken);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "管理员注册",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 409) {",
+              "    pm.collectionVariables.set('admin_registration_ok', 'true');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"workId\": \"{{admin_work_id}}\",\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\",\n  \"passwordAgain\": \"{{admin_password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "管理员登录",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var data = pm.response.json();",
+              "pm.collectionVariables.set('admin_access_token', data.accessToken);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "刷新令牌",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/refresh",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "refresh"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "获取状态枚举",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/statuses",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "statuses"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "获取物品目录（抓取第一个 id）",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var data = pm.response.json();",
+              "if (data.length > 0) {",
+              "    pm.collectionVariables.set('item_id', data[0].id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/warehouse/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "warehouse",
+            "items"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "创建草稿（目录内）",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var data = pm.response.json();",
+              "pm.collectionVariables.set('created_request_id', data.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemId\": {{item_id}},\n  \"quantity\": 3,\n  \"purpose\": \"日常打印\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "编辑草稿",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/{{created_request_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "{{created_request_id}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quantity\": 5,\n  \"purpose\": \"打印并复印\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "提交申请",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/{{created_request_id}}/submit",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "{{created_request_id}}",
+            "submit"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "管理员审批通过",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/{{created_request_id}}/audit",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "{{created_request_id}}",
+            "audit"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"decision\": \"approve\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "采购入库",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/{{created_request_id}}/purchase",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "{{created_request_id}}",
+            "purchase"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "查看申请详情",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/{{created_request_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "{{created_request_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "查看我的申请",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/mine?status=Purchased",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "mine"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "Purchased"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "管理员查看所有申请",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "创建目录外草稿（用于取消）",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var data = pm.response.json();",
+              "pm.collectionVariables.set('cancel_request_id', data.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customItemName\": \"定制笔\",\n  \"customSpecification\": \"黑色 0.5mm\",\n  \"quantity\": 1,\n  \"purpose\": \"临时会议\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "取消申请",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/{{cancel_request_id}}/cancel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "{{cancel_request_id}}",
+            "cancel"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "创建目录外草稿并提交（用于驳回）",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var data = pm.response.json();",
+              "pm.collectionVariables.set('reject_request_id', data.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customItemName\": \"定制文件夹\",\n  \"customSpecification\": \"蓝色 A4\",\n  \"quantity\": 2,\n  \"purpose\": \"归档\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "提交驳回流程申请",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/{{reject_request_id}}/submit",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "{{reject_request_id}}",
+            "submit"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "管理员驳回",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/procurement-requests/{{reject_request_id}}/audit",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "procurement-requests",
+            "{{reject_request_id}}",
+            "audit"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"decision\": \"reject\",\n  \"refusalReason\": \"预算不足\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    }
+  ]
+}
