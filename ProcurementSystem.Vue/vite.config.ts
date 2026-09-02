@@ -21,6 +21,11 @@ export default defineConfig({
         target: 'http://localhost:5074',
         changeOrigin: true,
       },
+      // 头像文件由后端 wwwroot 提供，代理转发避免被 Vite SPA fallback 拦截成 index.html
+      '/avatars': {
+        target: 'http://localhost:5074',
+        changeOrigin: true,
+      },
     },
   },
 })

@@ -2,8 +2,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { getMe } from '../api/users'
-import type { UserDto } from '../types/api'
 import {
   HomeFilled,
   User,
@@ -17,15 +15,21 @@ import {
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
-const me = ref<UserDto | null>(null)
+// 顶栏与个人中心共享 store 中的用户信息，头像更新后立即同步
+const me = computed(() => auth.me)
 
 const activeMenu = computed(() => route.path)
+// 头像 URL 拼接时间戳，避免浏览器 304 缓存导致新头像不显示
+const avatarSrc = computed(() =>
+  auth.me?.avatarUrl ? `${auth.me.avatarUrl}?t=${Date.now()}` : undefined,
+)
 
-onMounted(async () => {
-  try {
-    me.value = await getMe()
-  } catch {
-    // 当前用户信息加载失败时忽略，顶栏仅显示登录状态
+onMounted(() => {
+  // 进入布局时拉取一次用户信息；若已有缓存则不重复请求
+  if (!auth.me) {
+    auth.loadMe().catch(() => {
+      // 当前用户信息加载失败时忽略，顶栏仅显示登录状态
+    })
   }
 })
 
@@ -77,7 +81,7 @@ function handleLogout() {
         </div>
         <el-dropdown trigger="click" @command="handleLogout">
           <span class="user-badge">
-            <el-avatar :size="28" :src="me?.avatarUrl ?? undefined">
+            <el-avatar :size="28" :src="avatarSrc">
               {{ me?.name?.charAt(0) ?? 'U' }}
             </el-avatar>
             <span class="user-name">{{ me?.name ?? '用户' }}</span>

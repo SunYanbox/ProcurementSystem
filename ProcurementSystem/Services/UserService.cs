@@ -279,8 +279,9 @@ public class UserService(ProcurementDbContext db, IWebHostEnvironment env) : IUs
         if (user is null)
             return UserResult<UserDto>.Fail(UserError.UserNotFound);
 
-        var root = env.WebRootPath ?? Path.GetTempPath();
-        var avatarsDir = Path.Combine(root, "avatars");
+        // 头像必须写入 wwwroot/avatars，否则 UseStaticFiles 无法服务该路径。
+        // 不再回退到临时目录：临时目录不在静态文件服务范围内，导致头像请求 404/被 SPA 拦截。
+        var avatarsDir = Path.Combine(env.WebRootPath, "avatars");
         Directory.CreateDirectory(avatarsDir);
 
         var fileName = $"{Guid.NewGuid():N}{extension}";

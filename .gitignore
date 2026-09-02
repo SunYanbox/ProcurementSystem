@@ -31,6 +31,9 @@
 *.db-shm
 *.db-wal
 
+# Runtime uploaded avatar files (served from wwwroot/avatars)
+ProcurementSystem/wwwroot/avatars/
+
 # Environment
 .env
 appsettings.Development.json

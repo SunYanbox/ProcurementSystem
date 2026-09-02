@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { getMe, uploadAvatar } from '../api/users'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import { uploadAvatar } from '../api/users'
 import type { UserDto } from '../types/api'
 
-const me = ref<UserDto | null>(null)
+const auth = useAuthStore()
+// 与顶栏共享 store 中的用户信息
+const me = computed(() => auth.me)
 const loading = ref(false)
 const uploading = ref(false)
 
@@ -17,7 +20,7 @@ function setNotice(type: 'success' | 'warning' | 'error', message: string) {
 async function load() {
   loading.value = true
   try {
-    me.value = await getMe()
+    await auth.loadMe()
   } finally {
     loading.value = false
   }
@@ -36,7 +39,9 @@ async function handleAvatarChange(e: Event) {
   uploading.value = true
   notice.message = ''
   try {
-    me.value = await uploadAvatar(file)
+    const updated = await uploadAvatar(file)
+    // 更新共享 store，顶栏头像即时同步
+    auth.setMe(updated)
     setNotice('success', '头像已更新')
   } catch (e: any) {
     setNotice('error', e?.response?.data?.detail ?? '上传失败')
