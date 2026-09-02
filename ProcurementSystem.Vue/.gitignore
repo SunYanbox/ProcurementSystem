@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Element Plus 按需导入自动生成的类型声明，构建时由 unplugin 插件自动重建，无需提交
+auto-imports.d.ts
+components.d.ts
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

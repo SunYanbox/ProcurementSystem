@@ -1,21 +1,28 @@
 :root {
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, 'Segoe UI', Roboto, sans-serif;
   color: #1f2937;
-  background: #f9fafb;
+  background: #f5f7fa;
+  --el-color-primary: #409eff;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
 #app {
   min-height: 100vh;
 }
 
-button {
-  cursor: pointer;
+/* 统一表格与卡片圆角，提升视觉一致性 */
+.el-card {
+  --el-card-border-radius: 8px;
 }
 
-input {
-  font: inherit;
+.el-table {
+  --el-table-border-color: #eef0f4;
 }
