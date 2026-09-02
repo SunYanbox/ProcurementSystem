@@ -397,11 +397,13 @@ public class ProcurementRequestService(ProcurementDbContext db) : IProcurementRe
         Purpose = request.Purpose,
         Status = request.Status.ToString(),
         AuditedByName = request.AuditedBy?.Name,
-        AuditedAt = request.AuditedAt?.ToString("o"),
+        AuditedAt = request.AuditedAt is null ? null : DateTime.SpecifyKind(request.AuditedAt.Value, DateTimeKind.Utc).ToString("o"),
         RefusalReason = request.RefusalReason,
         PurchasedByName = request.PurchasedBy?.Name,
-        PurchasedAt = request.PurchasedAt?.ToString("o"),
-        RequestedAt = request.RequestedAt.ToString("o"),
-        CancelledAt = request.CancelledAt?.ToString("o")
+        PurchasedAt = request.PurchasedAt is null ? null : DateTime.SpecifyKind(request.PurchasedAt.Value, DateTimeKind.Utc).ToString("o"),
+        // SQLite 读取的 DateTime Kind 为 Unspecified，ToString("o") 不含 Z 后缀，
+        // 前端会把 UTC 值误当作本地时间；此处显式标为 Utc 以输出带 Z 的 ISO 字符串。
+        RequestedAt = DateTime.SpecifyKind(request.RequestedAt, DateTimeKind.Utc).ToString("o"),
+        CancelledAt = request.CancelledAt is null ? null : DateTime.SpecifyKind(request.CancelledAt.Value, DateTimeKind.Utc).ToString("o")
     };
 }
