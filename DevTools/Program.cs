@@ -6,6 +6,7 @@ using DevTools.Users;
 using DevTools.Warehouse;
 using DevTools.Purchases;
 using DevTools.Permissions;
+using DevTools.Sql;
 
 // Usage (from the solution root):
 //   dotnet run --project DevTools [command] [workId] [dbPath]
@@ -32,6 +33,10 @@ using DevTools.Permissions;
 //   cleanup-warehouse [dbPath]     Delete the item type, items, stock snapshots,
 //                                  and transactions created by the warehouse
 //                                  tests, printing every deleted row.
+//   cleanup-purchases [dbPath]      Delete the procurement requests created by the
+//                                  procurement tests, printing every deleted row.
+//   sql "<statement>" [dbPath]     Execute a raw SQL statement, or print SQL help
+//                                  when no statement is given.
 //   promote <workId> [dbPath]      Set the employee's role to Admin.
 //   demote <workId> [dbPath]       Set the employee's role back to Employee.
 //   help                           Print this help text.
@@ -45,8 +50,10 @@ var dbPathArg = command is "seed" or "seed-employee" or "seed-admin" or "seed-wa
     : args.Length > 2 ? args[2] : null;
 var dbPath = dbPathArg ?? Path.Combine("ProcurementSystem", "procurement.db");
 
-// `reset` and `del-user` accept an optional workId; other commands handle their own arguments.
+// `reset` and `del-user` accept an optional workId; `sql` receives the raw
+// statement as its second argument. Other commands handle their own arguments.
 var workId = (command is "reset" or "del-user") && args.Length > 1 ? args[1] : null;
+var sqlText = command == "sql" && args.Length > 1 ? args[1] : null;
 
 var options = new DbContextOptionsBuilder<ProcurementDbContext>()
     .UseSqlite($"Data Source={dbPath}")
@@ -83,6 +90,8 @@ return command switch
     "reset" => await SeedCommands.ResetAsync(db, workId),
     "del-user" => await UserCommands.DeleteUserAsync(db, workId),
     "cleanup-warehouse" => await WarehouseCleanup.CleanupAsync(db),
+    "cleanup-purchases" => await PurchaseCleanup.CleanupAsync(db),
+    "sql" => await SqlCommands.RunAsync(db, sqlText),
     "promote" => await RoleCommands.SetRoleAsync(db, GetRequiredWorkId(command, args), Role.Admin),
     "demote" => await RoleCommands.SetRoleAsync(db, GetRequiredWorkId(command, args), Role.Employee),
     "help" => PrintHelp(),
@@ -122,6 +131,7 @@ static int PrintHelp()
                                           default), or the given workId.
           cleanup-warehouse [dbPath]      Delete warehouse test data.
           cleanup-purchases [dbPath]       Delete procurement request test data.
+          sql "<statement>" [dbPath]       Execute raw SQL, or show SQL help.
           promote <workId> [dbPath]       Set the employee's role to Admin.
           demote <workId> [dbPath]        Set the employee's role back to Employee.
           help                            Show this help.
