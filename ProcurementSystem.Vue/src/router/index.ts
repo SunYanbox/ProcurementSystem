@@ -5,6 +5,7 @@ import HomeView from '../views/HomeView.vue'
 import UserManagementView from '../views/UserManagementView.vue'
 import DepartmentsView from '../views/DepartmentsView.vue'
 import WarehouseView from '../views/WarehouseView.vue'
+import ProcurementRequestsView from '../views/ProcurementRequestsView.vue'
 import ProfileView from '../views/ProfileView.vue'
 
 const router = createRouter({
@@ -43,6 +44,12 @@ const router = createRouter({
           name: 'warehouse',
           component: WarehouseView,
           meta: { title: '仓库库存' },
+        },
+        {
+          path: 'procurements',
+          name: 'procurements',
+          component: ProcurementRequestsView,
+          meta: { title: '采购申请' },
         },
         {
           path: 'profile',

@@ -1,9 +1,20 @@
 import http from './http'
 import type {
   CreateTransactionRequest,
+  ItemDto,
   StockItemDto,
   StockTransactionDto,
 } from '../types/api'
+
+export async function listItems(params?: {
+  search?: string
+  typeId?: number
+  isActive?: boolean
+  ordering?: string
+}): Promise<ItemDto[]> {
+  const { data } = await http.get<ItemDto[]>('/warehouse/items', { params })
+  return data
+}
 
 export async function listStocks(params?: {
   search?: string

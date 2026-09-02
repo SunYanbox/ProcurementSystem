@@ -65,3 +65,59 @@ export interface CreateTransactionRequest {
   quantityChange: number
   note?: string | null
 }
+
+export interface ItemDto {
+  id: number
+  name: string
+  typeId: number
+  typeName: string
+  description: string | null
+  specification: string
+  unit: string
+  price: number
+  stockQuantity: number | null
+  isActive: boolean
+}
+
+export interface ProcurementRequestDto {
+  id: number
+  sourceId: number
+  sourceName: string
+  itemId: number | null
+  itemName: string | null
+  customItemName: string | null
+  customSpecification: string | null
+  quantity: number
+  purpose: string
+  status: string
+  auditedByName: string | null
+  auditedAt: string | null
+  refusalReason: string | null
+  purchasedByName: string | null
+  purchasedAt: string | null
+  requestedAt: string
+  cancelledAt: string | null
+}
+
+export interface CreateProcurementRequestRequest {
+  // 目录物料与自定义物料互斥，由后端校验；null 表示使用自定义字段
+  itemId?: number | null
+  customItemName?: string | null
+  customSpecification?: string | null
+  quantity: number
+  purpose: string
+}
+
+export interface UpdateProcurementRequestRequest {
+  itemId?: number | null
+  customItemName?: string | null
+  customSpecification?: string | null
+  quantity?: number | null
+  purpose?: string | null
+}
+
+export interface AuditProcurementRequestRequest {
+  // "approve" / "reject"，拒绝时必须有 refusalReason
+  decision: string
+  refusalReason?: string | null
+}

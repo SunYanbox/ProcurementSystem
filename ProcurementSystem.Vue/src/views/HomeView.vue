@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { getMe } from '../api/users'
 import type { UserDto } from '../types/api'
-import { User, OfficeBuilding, Goods, Postcard } from '@element-plus/icons-vue'
+import { User, OfficeBuilding, Goods, DocumentAdd, Postcard } from '@element-plus/icons-vue'
 
 const auth = useAuthStore()
 
@@ -52,6 +52,12 @@ onMounted(async () => {
         <el-icon class="quick-icon" color="#f56c6c"><Goods /></el-icon>
         <div class="quick-label">仓库库存</div>
         <div class="quick-desc">查看物料库存与变动</div>
+      </el-card>
+
+      <el-card shadow="hover" class="quick-card" @click="$router.push('/procurements')">
+        <el-icon class="quick-icon" color="#909399"><DocumentAdd /></el-icon>
+        <div class="quick-label">采购申请</div>
+        <div class="quick-desc">发起与审批采购请求</div>
       </el-card>
 
       <el-card shadow="hover" class="quick-card" @click="$router.push('/profile')">

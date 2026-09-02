@@ -9,6 +9,7 @@ import {
   User,
   OfficeBuilding,
   Goods,
+  DocumentAdd,
   Postcard,
   ArrowDown,
 } from '@element-plus/icons-vue'
@@ -57,6 +58,10 @@ function handleLogout() {
         <el-menu-item index="/warehouse">
           <el-icon><Goods /></el-icon>
           <span>仓库库存</span>
+        </el-menu-item>
+        <el-menu-item index="/procurements">
+          <el-icon><DocumentAdd /></el-icon>
+          <span>采购申请</span>
         </el-menu-item>
         <el-menu-item index="/profile">
           <el-icon><Postcard /></el-icon>
