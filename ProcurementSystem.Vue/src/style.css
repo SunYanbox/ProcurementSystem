@@ -1,0 +1,21 @@
+:root {
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: #1f2937;
+  background: #f9fafb;
+}
+
+body {
+  margin: 0;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+}
+
+input {
+  font: inherit;
+}
