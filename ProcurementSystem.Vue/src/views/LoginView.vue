@@ -79,6 +79,9 @@ async function submit() {
         <el-button type="primary" size="large" class="login-btn" :loading="loading" @click="submit">
           登录
         </el-button>
+        <div class="login-register">
+          <el-link type="primary" @click="router.push({ name: 'register' })">已有工号？去注册</el-link>
+        </div>
       </el-form>
     </el-card>
   </div>
@@ -140,5 +143,12 @@ async function submit() {
   color: #f56c6c;
   font-size: 13px;
   text-align: left;
+}
+
+.login-register {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
 }
 </style>

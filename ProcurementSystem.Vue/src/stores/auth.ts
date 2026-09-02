@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import http from '../api/http'
 import { getMe } from '../api/users'
+import type { RegisterRequest, UserDto } from '../types/api'
 
 export interface AuthResponse {
   accessToken: string
@@ -18,6 +19,11 @@ export const useAuthStore = defineStore('auth', {
     isAdmin: (state) => state.role === 'Admin',
   },
   actions: {
+    // 注册成功后不签发令牌，员工仍需用新账号登录
+    async register(dto: RegisterRequest): Promise<UserDto> {
+      const { data } = await http.post<UserDto>('/auth/register', dto)
+      return data
+    },
     async login(username: string, password: string) {
       const { data } = await http.post<AuthResponse>('/auth/login', {
         username,

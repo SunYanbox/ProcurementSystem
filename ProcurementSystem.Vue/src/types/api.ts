@@ -145,3 +145,11 @@ export interface AuditProcurementRequestRequest {
   decision: string
   refusalReason?: string | null
 }
+
+export interface RegisterRequest {
+  // 员工凭工号自助绑定登录账号，WorkId 必须已由管理员建档
+  workId: string
+  username: string
+  password: string
+  passwordAgain: string
+}
