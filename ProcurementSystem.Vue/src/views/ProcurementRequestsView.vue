@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import { getMe } from '../api/users'
 import {
@@ -77,6 +76,13 @@ const auditTarget = ref<ProcurementRequestDto | null>(null)
 const auditDecision = ref('approve')
 const refusalReason = ref('')
 
+// 全站内联提示：错误/警告/成功统一在页面内展示，避免全局弹窗出现在角落
+const notice = reactive({ type: '', message: '' })
+function setNotice(type: 'success' | 'warning' | 'error', message: string) {
+  notice.type = type
+  notice.message = message
+}
+
 async function load() {
   loading.value = true
   try {
@@ -129,6 +135,7 @@ function openEdit(row: ProcurementRequestDto) {
 }
 
 async function submitForm() {
+  notice.message = ''
   // 目录物料与自定义物料互斥：目录申请清空自定义字段，自定义申请不传 itemId
   const payload: CreateProcurementRequestRequest = {
     itemId: sourceType.value === 'catalog' ? form.itemId : null,
@@ -140,45 +147,48 @@ async function submitForm() {
   try {
     if (isEdit.value && currentId.value !== null) {
       await editDraft(currentId.value, payload)
-      ElMessage.success('申请已更新')
+      setNotice('success', '申请已更新')
     } else {
       await createDraft(payload)
-      ElMessage.success('草稿已创建')
+      setNotice('success', '草稿已创建')
     }
     formVisible.value = false
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '操作失败')
+    setNotice('error', e?.response?.data?.detail ?? '操作失败')
   }
 }
 
 async function doSubmit(row: ProcurementRequestDto) {
+  notice.message = ''
   try {
     await submit(row.id)
-    ElMessage.success('已提交审批')
+    setNotice('success', '已提交审批')
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '操作失败')
+    setNotice('error', e?.response?.data?.detail ?? '操作失败')
   }
 }
 
 async function doCancel(row: ProcurementRequestDto) {
+  notice.message = ''
   try {
     await cancel(row.id)
-    ElMessage.success('已取消申请')
+    setNotice('success', '已取消申请')
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '操作失败')
+    setNotice('error', e?.response?.data?.detail ?? '操作失败')
   }
 }
 
 async function doPurchase(row: ProcurementRequestDto) {
+  notice.message = ''
   try {
     await purchase(row.id)
-    ElMessage.success('已入库')
+    setNotice('success', '已入库')
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '操作失败')
+    setNotice('error', e?.response?.data?.detail ?? '操作失败')
   }
 }
 
@@ -191,9 +201,10 @@ function openAudit(row: ProcurementRequestDto) {
 
 async function doAudit() {
   if (!auditTarget.value) return
+  notice.message = ''
   // 后端要求在拒绝时必须提供原因
   if (auditDecision.value === 'reject' && !refusalReason.value.trim()) {
-    ElMessage.warning('拒绝时必须填写原因')
+    setNotice('warning', '拒绝时必须填写原因')
     return
   }
   try {
@@ -201,11 +212,11 @@ async function doAudit() {
       decision: auditDecision.value,
       refusalReason: auditDecision.value === 'reject' ? refusalReason.value : null,
     })
-    ElMessage.success('审批完成')
+    setNotice('success', '审批完成')
     auditVisible.value = false
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '操作失败')
+    setNotice('error', e?.response?.data?.detail ?? '操作失败')
   }
 }
 
@@ -240,6 +251,13 @@ onMounted(async () => {
 
 <template>
   <div class="page">
+    <el-alert
+      v-if="notice.message"
+      :type="notice.type"
+      :title="notice.message"
+      show-icon
+      :closable="false"
+    />
     <el-card shadow="never" class="page-card">
       <template #header>
         <div class="page-header">

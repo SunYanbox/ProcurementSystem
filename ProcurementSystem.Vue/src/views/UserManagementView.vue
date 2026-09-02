@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { createUser, listUsers, updateUser } from '../api/users'
 import { listDepartments } from '../api/departments'
 import type { CreateUserRequest, DepartmentDto, UserDto } from '../types/api'
@@ -14,6 +13,13 @@ const currentId = ref<number | null>(null)
 
 const search = ref('')
 const departmentFilter = ref<number | undefined>(undefined)
+
+// 全站内联提示：错误/警告/成功统一在页面内展示，避免全局弹窗出现在角落
+const notice = reactive({ type: '', message: '' })
+function setNotice(type: 'success' | 'warning' | 'error', message: string) {
+  notice.type = type
+  notice.message = message
+}
 
 const form = reactive<{
   workId: string
@@ -53,6 +59,7 @@ async function load() {
 function openCreate() {
   isEdit.value = false
   currentId.value = null
+  notice.message = ''
   Object.assign(form, {
     workId: '',
     name: '',
@@ -68,6 +75,7 @@ function openCreate() {
 function openEdit(user: UserDto) {
   isEdit.value = true
   currentId.value = user.id
+  notice.message = ''
   Object.assign(form, {
     workId: user.workId,
     name: user.name,
@@ -81,6 +89,7 @@ function openEdit(user: UserDto) {
 }
 
 async function submit() {
+  notice.message = ''
   try {
     if (isEdit.value && currentId.value !== null) {
       await updateUser(currentId.value, {
@@ -91,7 +100,7 @@ async function submit() {
         role: form.role,
         working: form.working,
       })
-      ElMessage.success('用户已更新')
+      setNotice('success', '用户已更新')
     } else {
       await createUser({
         workId: form.workId,
@@ -101,12 +110,12 @@ async function submit() {
         departmentId: form.departmentId,
         role: form.role,
       })
-      ElMessage.success('用户已创建')
+      setNotice('success', '用户已创建')
     }
     dialogVisible.value = false
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '操作失败')
+    setNotice('error', e?.response?.data?.detail ?? '操作失败')
   }
 }
 
@@ -115,6 +124,13 @@ onMounted(load)
 
 <template>
   <div class="page">
+    <el-alert
+      v-if="notice.message"
+      :type="notice.type"
+      :title="notice.message"
+      show-icon
+      :closable="false"
+    />
     <el-card shadow="never" class="page-card">
       <template #header>
         <div class="page-header">
@@ -226,6 +242,7 @@ onMounted(load)
 .page {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .page-card {

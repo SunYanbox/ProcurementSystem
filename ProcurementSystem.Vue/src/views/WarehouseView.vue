@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import {
   createItem,
@@ -26,6 +25,13 @@ const itemTypes = ref<ItemTypeDto[]>([])
 const loading = ref(false)
 const search = ref('')
 const lowStockOnly = ref(false)
+
+// 全站内联提示：错误/警告/成功统一在页面内展示，避免全局弹窗出现在角落
+const notice = reactive({ type: '', message: '' })
+function setNotice(type: 'success' | 'warning' | 'error', message: string) {
+  notice.type = type
+  notice.message = message
+}
 
 const txVisible = ref(false)
 const currentStock = ref<StockItemDto | null>(null)
@@ -72,11 +78,13 @@ function openTransaction(stock: StockItemDto, type: 'ManualInbound' | 'ManualOut
   txForm.type = type
   txForm.quantityChange = 1
   txForm.note = null
+  notice.message = ''
   txVisible.value = true
 }
 
 async function submitTransaction() {
   if (!currentStock.value) return
+  notice.message = ''
   // 出库数量必须是负数，入库必须是正数；与后端 WarehouseService 的校验保持一致
   const direction = txForm.type === 'ManualInbound' ? 1 : -1
   const quantity = Math.abs(txForm.quantityChange)
@@ -86,32 +94,34 @@ async function submitTransaction() {
       quantityChange: direction * quantity,
       note: txForm.note,
     })
-    ElMessage.success('库存变动已记录')
+    setNotice('success', '库存变动已记录')
     txVisible.value = false
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '操作失败')
+    setNotice('error', e?.response?.data?.detail ?? '操作失败')
   }
 }
 
 function openTypeCreate() {
   typeForm.name = ''
   typeForm.description = null
+  notice.message = ''
   typeVisible.value = true
 }
 
 async function submitType() {
+  notice.message = ''
   if (!typeForm.name.trim()) {
-    ElMessage.warning('类型名称不能为空')
+    setNotice('warning', '类型名称不能为空')
     return
   }
   try {
     await createItemType({ name: typeForm.name.trim(), description: typeForm.description })
-    ElMessage.success('物料类型已创建')
+    setNotice('success', '物料类型已创建')
     typeVisible.value = false
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '创建失败，可能是名称已存在')
+    setNotice('error', e?.response?.data?.detail ?? '创建失败，可能是名称已存在')
   }
 }
 
@@ -124,21 +134,23 @@ function openItemCreate() {
     unit: '',
     price: 0,
   })
+  notice.message = ''
   itemVisible.value = true
 }
 
 async function submitItem() {
+  notice.message = ''
   if (!itemForm.name.trim() || !itemForm.typeId) {
-    ElMessage.warning('物料名称和类型必填')
+    setNotice('warning', '物料名称和类型必填')
     return
   }
   try {
     await createItem(itemForm)
-    ElMessage.success('物料已创建')
+    setNotice('success', '物料已创建')
     itemVisible.value = false
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '创建失败')
+    setNotice('error', e?.response?.data?.detail ?? '创建失败')
   }
 }
 
@@ -151,6 +163,13 @@ onMounted(load)
 
 <template>
   <div class="page">
+    <el-alert
+      v-if="notice.message"
+      :type="notice.type"
+      :title="notice.message"
+      show-icon
+      :closable="false"
+    />
     <el-card shadow="never" class="page-card">
       <template #header>
         <div class="page-header">
@@ -300,6 +319,7 @@ onMounted(load)
 .page {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .page-card {

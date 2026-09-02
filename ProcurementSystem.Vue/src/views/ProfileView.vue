@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { onMounted, reactive, ref } from 'vue'
 import { getMe, uploadAvatar } from '../api/users'
 import type { UserDto } from '../types/api'
 
 const me = ref<UserDto | null>(null)
 const loading = ref(false)
 const uploading = ref(false)
+
+// 全站内联提示：错误/警告/成功统一在页面内展示，避免全局弹窗出现在角落
+const notice = reactive({ type: '', message: '' })
+function setNotice(type: 'success' | 'warning' | 'error', message: string) {
+  notice.type = type
+  notice.message = message
+}
 
 async function load() {
   loading.value = true
@@ -23,16 +29,17 @@ async function handleAvatarChange(e: Event) {
   if (!file) return
   // 仅接受 jpg/png，与后端 UploadAvatarAsync 支持的 Content-Type 保持一致
   if (!['image/jpeg', 'image/png'].includes(file.type)) {
-    ElMessage.warning('仅支持 JPG/PNG 图片')
+    setNotice('warning', '仅支持 JPG/PNG 图片')
     input.value = ''
     return
   }
   uploading.value = true
+  notice.message = ''
   try {
     me.value = await uploadAvatar(file)
-    ElMessage.success('头像已更新')
+    setNotice('success', '头像已更新')
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '上传失败')
+    setNotice('error', e?.response?.data?.detail ?? '上传失败')
   } finally {
     uploading.value = false
     input.value = ''
@@ -44,6 +51,13 @@ onMounted(load)
 
 <template>
   <div class="page">
+    <el-alert
+      v-if="notice.message"
+      :type="notice.type"
+      :title="notice.message"
+      show-icon
+      :closable="false"
+    />
     <el-card shadow="never" class="page-card">
       <template #header>
         <span class="page-title">个人中心</span>
@@ -80,6 +94,12 @@ onMounted(load)
 </template>
 
 <style scoped>
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .page-card {
   border-radius: 8px;
 }

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { createDepartment, listDepartments } from '../api/departments'
 import type { DepartmentDto } from '../types/api'
 
@@ -8,6 +7,13 @@ const departments = ref<DepartmentDto[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const form = reactive<{ name: string }>({ name: '' })
+
+// 全站内联提示：错误/警告/成功统一在页面内展示，避免全局弹窗出现在角落
+const notice = reactive({ type: '', message: '' })
+function setNotice(type: 'success' | 'warning' | 'error', message: string) {
+  notice.type = type
+  notice.message = message
+}
 
 async function load() {
   loading.value = true
@@ -20,21 +26,23 @@ async function load() {
 
 function openCreate() {
   form.name = ''
+  notice.message = ''
   dialogVisible.value = true
 }
 
 async function submit() {
+  notice.message = ''
   if (!form.name.trim()) {
-    ElMessage.warning('部门名称不能为空')
+    setNotice('warning', '部门名称不能为空')
     return
   }
   try {
     await createDepartment({ name: form.name.trim() })
-    ElMessage.success('部门已创建')
+    setNotice('success', '部门已创建')
     dialogVisible.value = false
     await load()
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail ?? '创建失败，可能是部门名称已存在')
+    setNotice('error', e?.response?.data?.detail ?? '创建失败，可能是部门名称已存在')
   }
 }
 
@@ -43,6 +51,13 @@ onMounted(load)
 
 <template>
   <div class="page">
+    <el-alert
+      v-if="notice.message"
+      :type="notice.type"
+      :title="notice.message"
+      show-icon
+      :closable="false"
+    />
     <el-card shadow="never" class="page-card">
       <template #header>
         <div class="page-header">
@@ -75,6 +90,7 @@ onMounted(load)
 .page {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .page-card {

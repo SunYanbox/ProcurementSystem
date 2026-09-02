@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { User as UserIcon, Lock as LockIcon } from '@element-plus/icons-vue'
 
 const auth = useAuthStore()
@@ -10,6 +10,8 @@ const router = useRouter()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+// 登录失败提示在卡片内联展示，避免全局弹窗出现在页面角落
+const loginError = ref('')
 const form = reactive({
   username: '',
   password: '',
@@ -25,13 +27,18 @@ async function submit() {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     loading.value = true
+    loginError.value = ''
     try {
       await auth.login(form.username, form.password)
       const redirect = router.currentRoute.value.query.redirect as string | undefined
       await router.push(redirect ?? '/')
     } catch (e: any) {
-      // 后端错误信息通过 ElMessage 展示
-      ElMessage.error(e?.response?.data?.detail ?? '登录失败，请检查用户名和密码。')
+      // 403 表示账号存在但已被标记离职，给出明确提示而非误导性的密码错误
+      if (e?.response?.status === 403) {
+        loginError.value = '该账号已离职，无法登录。'
+      } else {
+        loginError.value = e?.response?.data?.detail ?? '登录失败，请检查用户名和密码。'
+      }
     } finally {
       loading.value = false
     }
@@ -68,6 +75,7 @@ async function submit() {
             :prefix-icon="LockIcon"
           />
         </el-form-item>
+        <p v-if="loginError" class="login-error">{{ loginError }}</p>
         <el-button type="primary" size="large" class="login-btn" :loading="loading" @click="submit">
           登录
         </el-button>
@@ -125,5 +133,12 @@ async function submit() {
 .login-btn {
   width: 100%;
   margin-top: 8px;
+}
+
+.login-error {
+  margin: -4px 0 8px;
+  color: #f56c6c;
+  font-size: 13px;
+  text-align: left;
 }
 </style>
