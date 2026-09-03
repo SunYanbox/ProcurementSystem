@@ -283,6 +283,51 @@ public class AuthServiceTests : TestBase
         Assert.Null(result.Value);
     }
 
+    [Fact]
+    public async Task RegisterAsync_Fails_WhenUserInactive()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedUnboundEmployeeAsync(db);
+        employee.Working = false;
+        await db.SaveChangesAsync();
+        var auth = CreateAuthService(db);
+
+        var result = await auth.RegisterAsync(new RegisterRequest
+        {
+            WorkId = "A001",
+            Username = Username,
+            Password = Password,
+            PasswordAgain = Password
+        });
+
+        // 离职员工即使档案存在也不能自助注册绑定账号
+        Assert.Equal(AuthError.UserInactive, result.Error);
+        Assert.Null(result.Value);
+        var saved = await db.Users.SingleAsync(u => u.WorkId == "A001");
+        Assert.Null(saved.Username);
+        Assert.Null(saved.PasswordHash);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_Fails_WhenUserInactive_AndRevokesToken()
+    {
+        using var db = CreateDbContext();
+        var (_, employee) = await SeedBoundUserAsync(db);
+        var auth = CreateAuthService(db);
+        var login = await auth.LoginAsync(new LoginRequest { Username = Username, Password = Password });
+        var refresh = login.Value!.RefreshToken;
+        employee.Working = false;
+        await db.SaveChangesAsync();
+
+        var result = await auth.RefreshAsync(refresh);
+
+        // 离职员工不能通过 refresh token 续期，且当前 token 会被立即撤销防止重放
+        Assert.Equal(AuthError.UserInactive, result.Error);
+        Assert.Null(result.Value);
+        var stored = await db.RefreshTokens.SingleAsync(t => t.Token == refresh);
+        Assert.NotNull(stored.RevokedAt);
+    }
+
     // Signs a JWT whose exp is already in the past, to prove VerifyAsync checks lifetime.
     private static string CreateExpiredJwt()
     {

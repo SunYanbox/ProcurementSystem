@@ -29,6 +29,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         {
             AuthError.PasswordMismatch => BadRequest(),
             AuthError.WorkIdNotFound => NotFound(),
+            AuthError.UserInactive => StatusCode(StatusCodes.Status403Forbidden),
             AuthError.UsernameTaken or AuthError.WorkIdAlreadyBound => Conflict(),
             null => StatusCode(StatusCodes.Status201Created, result.Value),
             _ => StatusCode(500)
@@ -42,6 +43,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         return result.Error switch
         {
             AuthError.TokenInvalid => Unauthorized(),
+            AuthError.UserInactive => StatusCode(StatusCodes.Status403Forbidden),
             null => Ok(result.Value),
             _ => StatusCode(500)
         };

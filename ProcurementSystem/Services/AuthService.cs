@@ -98,6 +98,10 @@ public class AuthService(ProcurementDbContext db, IConfiguration config) : IAuth
         if (user is null)
             return AuthResult<UserDto>.Fail(AuthError.WorkIdNotFound);
 
+        // 离职员工同样禁止自助注册，即使档案仍存在
+        if (!user.Working)
+            return AuthResult<UserDto>.Fail(AuthError.UserInactive);
+
         // Non-null Username means this employee record already has a login account.
         if (user.Username is not null)
             return AuthResult<UserDto>.Fail(AuthError.WorkIdAlreadyBound);
@@ -127,6 +131,14 @@ public class AuthService(ProcurementDbContext db, IConfiguration config) : IAuth
 
         if (user is null)
             return AuthResult<AuthResponse>.Fail(AuthError.TokenInvalid);
+
+        // 离职员工禁止通过 refresh token 续期，且立即撤销当前 token 防止重放
+        if (!user.Working)
+        {
+            stored.RevokedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return AuthResult<AuthResponse>.Fail(AuthError.UserInactive);
+        }
 
         // Rotate: revoke the old token so a stolen one can only be used once.
         stored.RevokedAt = DateTime.UtcNow;

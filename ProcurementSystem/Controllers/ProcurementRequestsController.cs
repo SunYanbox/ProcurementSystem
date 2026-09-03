@@ -166,6 +166,7 @@ public class ProcurementRequestsController(IProcurementRequestService procuremen
         {
             ProcurementRequestError.RequestNotFound => NotFound(),
             ProcurementRequestError.NotOwner => Forbid(),
+            ProcurementRequestError.SourceInactive => StatusCode(StatusCodes.Status403Forbidden),
             ProcurementRequestError.NotDraft or
             ProcurementRequestError.NotCancellable or
             ProcurementRequestError.NotPurchasable or
