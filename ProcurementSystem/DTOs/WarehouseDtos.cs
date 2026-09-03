@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ProcurementSystem.DTOs;
 
 public class CreateItemTypeRequest
 {
+    [Required]
     public string Name { get; set; } = string.Empty;
 
     public string? Description { get; set; }
@@ -9,6 +12,7 @@ public class CreateItemTypeRequest
 
 public class UpdateItemTypeRequest
 {
+    [Required]
     public string Name { get; set; } = string.Empty;
 
     public string? Description { get; set; }
@@ -16,14 +20,18 @@ public class UpdateItemTypeRequest
 
 public class CreateItemRequest
 {
+    [Required]
     public string Name { get; set; } = string.Empty;
 
+    [Range(typeof(long), "1", "9223372036854775807")]
     public long TypeId { get; set; }
 
     public string? Description { get; set; }
 
+    [Required]
     public string Specification { get; set; } = string.Empty;
 
+    [Required]
     public string Unit { get; set; } = string.Empty;
 
     public decimal Price { get; set; }
@@ -52,6 +60,7 @@ public class CreateTransactionRequest
 {
     // Keep type as string: the HTTP contract must not leak the C# enum type,
     // and invalid values are rejected by WarehouseService rather than model binding.
+    [Required]
     public string Type { get; set; } = string.Empty;
 
     // Must be non-zero; the sign must match the transaction type's intent.

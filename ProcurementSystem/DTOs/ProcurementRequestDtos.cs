@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ProcurementSystem.DTOs;
 
 public class CreateProcurementRequestRequest
@@ -10,6 +12,7 @@ public class CreateProcurementRequestRequest
 
     public string? CustomSpecification { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int Quantity { get; set; }
 
     public string Purpose { get; set; } = string.Empty;
@@ -25,6 +28,7 @@ public class UpdateProcurementRequestRequest
 
     public string? CustomSpecification { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int? Quantity { get; set; }
 
     public string? Purpose { get; set; }
@@ -33,6 +37,7 @@ public class UpdateProcurementRequestRequest
 public class AuditProcurementRequestRequest
 {
     // "approve" / "reject"; kept as string to keep the HTTP contract stable.
+    [Required]
     public string Decision { get; set; } = string.Empty;
 
     // Required when Decision == "reject".

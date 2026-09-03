@@ -1,15 +1,20 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ProcurementSystem.DTOs;
 
 public class CreateUserRequest
 {
+    [Required]
     public string WorkId { get; set; } = string.Empty;
 
+    [Required]
     public string Name { get; set; } = string.Empty;
 
     public string? Email { get; set; }
 
     public string? Phone { get; set; }
 
+    [Range(typeof(long), "1", "9223372036854775807")]
     public long DepartmentId { get; set; }
 
     // Keep role as string here: the HTTP contract must not leak the C# enum type,
@@ -36,13 +41,17 @@ public class UpdateUserRequest
 
 public class ChangePasswordRequest
 {
+    [Required]
     public string OldPassword { get; set; } = string.Empty;
 
+    [Required]
+    [MinLength(6)]
     public string NewPassword { get; set; } = string.Empty;
 }
 
 public class BindPhoneRequest
 {
+    [Required]
     public string Phone { get; set; } = string.Empty;
 }
 

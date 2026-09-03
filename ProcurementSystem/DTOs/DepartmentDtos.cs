@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ProcurementSystem.DTOs;
 
 public class CreateDepartmentRequest
 {
+    [Required]
     public string Name { get; set; } = string.Empty;
 }
 

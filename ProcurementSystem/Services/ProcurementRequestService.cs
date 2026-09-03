@@ -380,10 +380,10 @@ public class ProcurementRequestService(ProcurementDbContext db) : IProcurementRe
                 return query.Where(_ => false); // Invalid status yields an empty result.
         }
 
-        if (DateTime.TryParse(from, out var fromDate))
+        if (DateFilter.TryParseFrom(from, out var fromDate))
             query = query.Where(r => r.RequestedAt >= fromDate);
 
-        if (DateTime.TryParse(to, out var toDate))
+        if (DateFilter.TryParseTo(to, out var toDate))
             query = query.Where(r => r.RequestedAt <= toDate);
 
         if (!string.IsNullOrWhiteSpace(search))

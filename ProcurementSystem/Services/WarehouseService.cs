@@ -282,10 +282,10 @@ public class WarehouseService(ProcurementDbContext db) : IWarehouseService
         if (!string.IsNullOrWhiteSpace(type) && TryParseTransactionType(type, out var parsedType))
             query = query.Where(t => t.Type == parsedType);
 
-        if (DateTime.TryParse(from, out var fromDate))
+        if (DateFilter.TryParseFrom(from, out var fromDate))
             query = query.Where(t => t.CreatedAt >= fromDate);
 
-        if (DateTime.TryParse(to, out var toDate))
+        if (DateFilter.TryParseTo(to, out var toDate))
             query = query.Where(t => t.CreatedAt <= toDate);
 
         var transactions = await query
