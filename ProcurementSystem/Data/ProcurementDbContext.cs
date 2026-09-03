@@ -9,7 +9,6 @@ public class ProcurementDbContext : DbContext
     public ProcurementDbContext(DbContextOptions<ProcurementDbContext> options)
         : base(options) { }
 
-    public DbSet<Todo> Todos => Set<Todo>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
