@@ -55,4 +55,11 @@ public class AuthController(IAuthService authService) : ControllerBase
         var valid = await authService.VerifyAsync(dto.Token);
         return valid ? Ok() : Unauthorized();
     }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshRequest dto)
+    {
+        await authService.LogoutAsync(dto.RefreshToken);
+        return NoContent();
+    }
 }

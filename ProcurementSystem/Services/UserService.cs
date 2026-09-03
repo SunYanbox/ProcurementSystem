@@ -288,6 +288,22 @@ public class UserService(ProcurementDbContext db, IWebHostEnvironment env) : IUs
         var filePath = Path.Combine(avatarsDir, fileName);
         await File.WriteAllBytesAsync(filePath, buffer.ToArray());
 
+        // 替换头像后清理旧文件，避免 wwwroot/avatars 无限堆积
+        var oldUrl = user.AvatarUrl;
+        if (!string.IsNullOrWhiteSpace(oldUrl) && oldUrl.StartsWith("/avatars/"))
+        {
+            try
+            {
+                var oldPath = Path.Combine(avatarsDir, Path.GetFileName(oldUrl));
+                if (File.Exists(oldPath))
+                    File.Delete(oldPath);
+            }
+            catch (IOException)
+            {
+                // 旧文件可能被占用；清理失败不应阻断新头像保存
+            }
+        }
+
         user.AvatarUrl = $"/avatars/{fileName}";
         user.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();

@@ -33,8 +33,8 @@ onMounted(() => {
   }
 })
 
-function handleLogout() {
-  auth.logout()
+async function handleLogout() {
+  await auth.logout()
   router.push({ name: 'login' })
 }
 </script>

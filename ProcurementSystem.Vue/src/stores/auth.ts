@@ -52,7 +52,16 @@ export const useAuthStore = defineStore('auth', {
       this.role = me.role
       localStorage.setItem('user_role', me.role)
     },
-    logout() {
+    async logout() {
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (refreshToken) {
+        // 主动撤销服务端 refresh token；请求失败也继续清理本地状态
+        try {
+          await http.post('/auth/logout', { refreshToken })
+        } catch {
+          // 忽略登出请求失败，避免用户无法退出
+        }
+      }
       this.accessToken = ''
       this.refreshToken = ''
       this.role = ''

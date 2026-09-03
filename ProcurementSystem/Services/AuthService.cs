@@ -36,6 +36,7 @@ public interface IAuthService
     Task<AuthResult<UserDto>> RegisterAsync(RegisterRequest dto);
     Task<AuthResult<AuthResponse>> RefreshAsync(string refreshToken);
     Task<bool> VerifyAsync(string token);
+    Task<bool> LogoutAsync(string refreshToken);
 }
 
 public class AuthService(ProcurementDbContext db, IConfiguration config) : IAuthService
@@ -151,6 +152,20 @@ public class AuthService(ProcurementDbContext db, IConfiguration config) : IAuth
             RefreshToken = newRefreshToken,
             User = UserMapper.ToDto(user)
         });
+    }
+
+    public async Task<bool> LogoutAsync(string refreshToken)
+    {
+        var stored = await db.RefreshTokens
+            .FirstOrDefaultAsync(t => t.Token == refreshToken);
+
+        if (stored is null || stored.RevokedAt is not null)
+            return false;
+
+        // 主动登出时撤销当前 refresh token，防止本地清理后 token 仍可重放
+        stored.RevokedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return true;
     }
 
     public Task<bool> VerifyAsync(string token)
