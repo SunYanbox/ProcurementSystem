@@ -155,6 +155,7 @@ public class ProcurementRequestsController(IProcurementRequestService procuremen
         {
             ProcurementRequestError.RequestNotFound => NotFound(),
             ProcurementRequestError.NotPurchasable => BadRequest(),
+            ProcurementRequestError.ConcurrencyConflict => StatusCode(StatusCodes.Status409Conflict),
             null => Ok(result.Value),
             _ => throw new InvalidOperationException($"Unhandled error: {result.Error}")
         };

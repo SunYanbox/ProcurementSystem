@@ -20,6 +20,6 @@ public static class UserMapper
         Role = user.Role.ToString(),
         Working = user.Working,
         AvatarUrl = user.AvatarUrl,
-        CreatedAt = user.CreatedAt.ToString("o")
+        CreatedAt = DateTime.SpecifyKind(user.CreatedAt, DateTimeKind.Utc).ToString("o")
     };
 }

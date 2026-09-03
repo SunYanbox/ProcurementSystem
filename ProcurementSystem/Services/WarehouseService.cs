@@ -14,7 +14,8 @@ public enum WarehouseError
     TransactionTypeInvalid,
     QuantityChangeZero,
     TypeQuantityMismatch,
-    InsufficientStock
+    InsufficientStock,
+    ConcurrencyConflict
 }
 
 public record WarehouseResult<T>(T? Value, WarehouseError? Error)
@@ -252,8 +253,15 @@ public class WarehouseService(ProcurementDbContext db) : IWarehouseService
         stock.Version = Guid.NewGuid().ToByteArray();
 
         db.StockTransactions.Add(transaction);
-        await db.SaveChangesAsync();
-        await tx.CommitAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return WarehouseResult<StockTransactionDto>.Fail(WarehouseError.ConcurrencyConflict);
+        }
 
         transaction.Item = item;
         transaction.Operator = await db.Users.FindAsync(operatorId) ?? throw new InvalidOperationException("Operator not found");

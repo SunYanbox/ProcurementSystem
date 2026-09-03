@@ -20,7 +20,8 @@ public enum ProcurementRequestError
     InvalidDecision,
     RefusalReasonRequired,
     // 离职员工不能创建新的采购申请
-    SourceInactive
+    SourceInactive,
+    ConcurrencyConflict
 }
 
 public record ProcurementRequestResult<T>(T? Value, ProcurementRequestError? Error)
@@ -329,8 +330,15 @@ public class ProcurementRequestService(ProcurementDbContext db) : IProcurementRe
             });
         }
 
-        await db.SaveChangesAsync();
-        await tx.CommitAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ProcurementRequestResult<ProcurementRequestDto>.Fail(ProcurementRequestError.ConcurrencyConflict);
+        }
 
         return ProcurementRequestResult<ProcurementRequestDto>.Ok(await ToDtoAsync(request));
     }

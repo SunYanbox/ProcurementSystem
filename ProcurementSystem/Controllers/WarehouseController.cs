@@ -125,6 +125,7 @@ public class WarehouseController(IWarehouseService warehouseService) : Controlle
             WarehouseError.QuantityChangeZero or
             WarehouseError.TypeQuantityMismatch or
             WarehouseError.InsufficientStock => BadRequest(),
+            WarehouseError.ConcurrencyConflict => StatusCode(StatusCodes.Status409Conflict),
             null => StatusCode(StatusCodes.Status201Created, result.Value),
             _ => throw new InvalidOperationException($"Unhandled error: {result.Error}")
         };
