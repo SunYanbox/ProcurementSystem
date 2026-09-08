@@ -37,3 +37,6 @@ ProcurementSystem/wwwroot/avatars/
 # Environment
 .env
 appsettings.Development.json
+
+# Skill
+skills-lock.json 
